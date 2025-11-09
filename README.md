@@ -10,8 +10,10 @@ or
 `source venv/bin/activate` # macOS/Linux
 
 - `pip install -r requirements.txt`
+- `python manage.py makemigrations`
+- `python manage.py migrate`
 
-make .env, put relevent keys
+make .env, put relevant keys,
 save then run: `python manage.py dbshell`
 
 ### frontend setup
