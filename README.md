@@ -4,17 +4,15 @@
 
 ### backend setup
 
-`python -m venv venv`
-`venv\Scripts\activate` # Windows
+- `python -m venv venv`
+- `venv\Scripts\activate` # Windows
+or
+`source venv/bin/activate` # macOS/Linux
 
-# or
-
-source venv/bin/activate # macOS/Linux
-
-`pip install -r requirements.txt`
+- `pip install -r requirements.txt`
 
 make .env, put relevent keys
-save then run: python manage.py dbshell
+save then run: `python manage.py dbshell`
 
 ### frontend setup
 
