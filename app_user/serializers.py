@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from rest_framework import serializers
+from .models import User, AppUser
 
 User = get_user_model()
 
@@ -24,4 +26,10 @@ class RegisterSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password2')
         user = User.objects.create_user(**validated_data)
+        AppUser.objects.create(user=user)  # create linked profile
         return user
+
+class AppUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppUser
+        fields = ['full_name', 'city', 'items', 'sales', 'listing_views']
