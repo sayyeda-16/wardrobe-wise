@@ -9,27 +9,39 @@ User = get_user_model()
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
+    full_name = serializers.CharField(required=False, allow_blank=True)
+    city = serializers.CharField(required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ['email', 'username', 'password', 'password2']
+        fields = ['email', 'username', 'password', 'password2', 'full_name', 'city']
 
     def validate(self, attrs):
-        password = attrs.get('password')
-        password2 = attrs.get('password2')
-
-        if password != password2:
+        if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Passwords do not match."})
-
         return attrs
 
     def create(self, validated_data):
+        # remove non-User fields
+        full_name = validated_data.pop('full_name', '')
+        city = validated_data.pop('city', '')
         validated_data.pop('password2')
-        user = User.objects.create_user(**validated_data)
-        AppUser.objects.create(user=user)  # create linked profile
+
+        # create the User
+        user = User.objects.create_user(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            password=validated_data['password'],
+        )
+
+        # create the linked AppUser profile
+        AppUser.objects.create(user=user, full_name=full_name, city=city)
+
         return user
 
 class AppUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source='user.email', read_only=True)
+
     class Meta:
         model = AppUser
-        fields = ['full_name', 'city', 'items', 'sales', 'listing_views']
+        fields = ['full_name', 'email', 'city']
