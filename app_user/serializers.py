@@ -9,8 +9,9 @@ User = get_user_model()
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
-    full_name = serializers.CharField(required=False, allow_blank=True)
-    city = serializers.CharField(required=False, allow_blank=True)
+
+    full_name = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    city = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = User
@@ -35,7 +36,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         )
 
         # create the linked AppUser profile
-        AppUser.objects.create(user=user, full_name=full_name, city=city)
+        AppUser.objects.create(user=user, full_name=full_name, city=city, email=user.email)
 
         return user
 

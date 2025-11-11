@@ -1,7 +1,8 @@
 // pages/Register.js
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+// import { useAuth } from '../contexts/AuthContext';
+import { registerUser } from '../api/auth';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -9,11 +10,14 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    full_name: '',
+    city: '',
   });
+
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const { register } = useAuth();
+  // const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -33,19 +37,23 @@ const Register = () => {
     }
 
     setLoading(true);
-
-    const result = await register({
+    
+    // send data to django api
+    const result = await registerUser({
       username: formData.username,
       email: formData.email,
       password: formData.password,
+      password2: formData.confirmPassword,
+      full_name: formData.full_name,
+      city: formData.city,
     });
 
-    if (result.success) {
-      navigate('/login');
-    } else {
-      setError(result.error);
+    if (result.id || result.email){
+      navigate("/login")
+    } else{
+      setError(result?.detail || JSON.stringify(result));
     }
-    
+
     setLoading(false);
   };
 
@@ -87,6 +95,34 @@ const Register = () => {
             onChange={handleChange}
             required
             className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
+            Full Name
+          </label>
+          <input
+            type="text"
+            id="full_name"
+            name="full_name"
+            value={formData.full_name}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md px-3 py-2"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+            City
+          </label>
+          <input
+            type="text"
+            id="city"
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md px-3 py-2"
           />
         </div>
 

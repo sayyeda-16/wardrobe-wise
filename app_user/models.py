@@ -20,7 +20,7 @@ class AppUser(models.Model):
         primary_key=True       # mark as the primary key
     )
     full_name = models.CharField(max_length=100, blank=True)
-    email = models.EmailField(unique=True)
+    email = models.EmailField(blank=True, null=True)
     city = models.CharField(max_length=100, blank=True)
 
     class Meta:
