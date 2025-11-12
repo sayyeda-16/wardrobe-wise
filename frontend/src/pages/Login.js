@@ -149,9 +149,6 @@ function Login({ onLogin, onSwitchToRegister }) {
               Create Sustainable Account
             </button>
 
-            <div style={styles.demoNotice}>
-              <strong>Eco Demo:</strong> Use any credentials to explore sustainable fashion trading
-            </div>
           </div>
         </div>
       </div>
@@ -405,16 +402,7 @@ const styles = {
     marginRight: '8px',
     fontSize: '14px',
   },
-  demoNotice: {
-    marginTop: '24px',
-    padding: '16px',
-    backgroundColor: '#f0f7e6',
-    borderRadius: '12px',
-    fontSize: '13px',
-    color: '#556b2f',
-    textAlign: 'center',
-    border: '1px solid #d4e6a4',
-  },
+  
 };
 
 // Add CSS animations
