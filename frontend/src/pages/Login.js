@@ -33,7 +33,7 @@ function Login({ onLogin, onSwitchToRegister }) {
           <div style={styles.brand}>
             <div style={styles.logo}>
               <FaLeaf style={styles.logoIcon} />
-              <span style={styles.logoText}>EcoWardrobe</span>
+              <span style={styles.logoText}>WardrobeWise</span>
             </div>
             <p style={styles.tagline}>Sustainable Fashion Marketplace</p>
           </div>
@@ -130,7 +130,7 @@ function Login({ onLogin, onSwitchToRegister }) {
                     Signing In...
                   </>
                 ) : (
-                  'Sign In to EcoWardrobe'
+                  'Sign In to WardrobeWise'
                 )}
               </button>
             </form>
