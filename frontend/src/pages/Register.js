@@ -1,23 +1,19 @@
-// pages/Register.js
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-// import { useAuth } from '../contexts/AuthContext';
-import { registerUser } from '../api/auth';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { registerUser } from "../api/auth";
 
-const Register = () => {
+function Register({ onRegister, onSwitchToLogin }) {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    full_name: '',
-    city: '',
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    full_name: "",
+    city: "",
   });
 
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  
-  // const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -29,10 +25,10 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    setError("");
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      alert("Passwords don't match!");
       return;
     }
 
@@ -58,12 +54,31 @@ const Register = () => {
   };
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-2xl font-bold text-center mb-6">Create Your Account</h2>
-      
+    <div style={{ maxWidth: '400px', margin: '50px auto', padding: '20px' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '30px' }}>Create Your Account</h2>
       <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
-        <div>
-          <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
+
+      {error && (
+        <div
+          style={{
+            backgroundColor: "#FEE2E2",
+            color: "#B91C1C",
+            padding: "10px",
+            borderRadius: "8px",
+            marginBottom: "15px",
+            textAlign: "center",
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+        {/* Full Name */}
+        <div style={{ marginBottom: "20px" }}>
+          <label
+            htmlFor="full_name"
+            style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}
+          >
             Full Name
           </label>
           <input
@@ -72,12 +87,23 @@ const Register = () => {
             name="full_name"
             value={formData.full_name}
             onChange={handleChange}
-            className="mt-1 block w-full border rounded-md px-3 py-2"
+            placeholder="Your full name"
+            style={{
+              width: "100%",
+              padding: "12px",
+              border: "1px solid #D1D5DB",
+              borderRadius: "8px",
+              fontSize: "16px",
+            }}
           />
         </div>
 
-        <div>
-          <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+        {/* City */}
+        <div style={{ marginBottom: "20px" }}>
+          <label
+            htmlFor="city"
+            style={{ display: "block", marginBottom: "8px", fontWeight: "bold" }}
+          >
             City
           </label>
           <input
@@ -86,112 +112,107 @@ const Register = () => {
             name="city"
             value={formData.city}
             onChange={handleChange}
-            className="mt-1 block w-full border rounded-md px-3 py-2"
+            placeholder="Your city"
+            style={{
+              width: "100%",
+              padding: "12px",
+              border: "1px solid #D1D5DB",
+              borderRadius: "8px",
+              fontSize: "16px",
+            }}
           />
         </div>
-        
+
+        {/* Username */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Username *</label>
           <input
             type="text"
-            id="username"
             name="username"
             value={formData.username}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            style={{ width: '100%', padding: '12px', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '16px' }}
+            placeholder="Choose a username"
           />
         </div>
 
-
+        {/* Email */}
         <div style={{ marginBottom: '20px' }}>
           <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Email *</label>
           <input
             type="email"
-            id="email"
             name="email"
             value={formData.email}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            style={{ width: '100%', padding: '12px', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '16px' }}
+            placeholder="Enter your email"
           />
         </div>
 
-        <div>
-          <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
-            Full Name
-          </label>
-          <input
-            type="text"
-            id="full_name"
-            name="full_name"
-            value={formData.full_name}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="city" className="block text-sm font-medium text-gray-700">
-            City
-          </label>
-          <input
-            type="text"
-            id="city"
-            name="city"
-            value={formData.city}
-            onChange={handleChange}
-            className="mt-1 block w-full border rounded-md px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-            Password
-          </label>
+        {/* Password */}
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Password *</label>
           <input
             type="password"
-            id="password"
             name="password"
             value={formData.password}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            style={{ width: '100%', padding: '12px', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '16px' }}
+            placeholder="Create a password"
           />
         </div>
 
-        <div>
-          <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
-            Confirm Password
-          </label>
+        {/* Confirm Password */}
+        <div style={{ marginBottom: '30px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Confirm Password *</label>
           <input
             type="password"
-            id="confirmPassword"
             name="confirmPassword"
             value={formData.confirmPassword}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+            style={{ width: '100%', padding: '12px', border: '1px solid #D1D5DB', borderRadius: '8px', fontSize: '16px' }}
+            placeholder="Confirm your password"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-md font-medium transition-colors disabled:opacity-50"
+          style={{ 
+            width: '100%', 
+            padding: '15px', 
+            backgroundColor: '#10B981', 
+            color: 'white', 
+            border: 'none', 
+            borderRadius: '8px',
+            fontSize: '16px',
+            cursor: 'pointer',
+            marginBottom: '15px'
+          }}
         >
-          {loading ? 'Creating Account...' : 'Register'}
+          {loading ? "Creating Account..." : "Create Account"}
         </button>
-      </form>
 
-      <p className="mt-4 text-center text-sm text-gray-600">
-        Already have an account?{' '}
-        <Link to="/login" className="text-blue-500 hover:text-blue-600">
-          Login here
-        </Link>
-      </p>
+        <div style={{ textAlign: "center" }}>
+          <span style={{ color: "#6B7280" }}>Already have an account? </span>
+          <Link
+            to="/login"
+            style={{
+              color: "#3B82F6",
+              textDecoration: "underline",
+              cursor: "pointer",
+            }}
+          >
+            Sign in here
+          </Link>
+        </div>
+      </form>
     </div>
   );
-};
+}
 
 export default Register;
