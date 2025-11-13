@@ -37,8 +37,7 @@ const Register = () => {
     }
 
     setLoading(true);
-    
-    // send data to django api
+
     const result = await registerUser({
       username: formData.username,
       email: formData.email,
@@ -48,9 +47,10 @@ const Register = () => {
       city: formData.city,
     });
 
-    if (result.id || result.email){
-      navigate("/login")
-    } else{
+    if (result.id || result.email) {
+      alert(`Account created for ${formData.username}!`);
+      navigate("/login");
+    } else {
       setError(result?.detail || JSON.stringify(result));
     }
 
@@ -61,17 +61,37 @@ const Register = () => {
     <div className="max-w-md mx-auto bg-white rounded-lg shadow-md p-6">
       <h2 className="text-2xl font-bold text-center mb-6">Create Your Account</h2>
       
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {typeof error === 'object' ? JSON.stringify(error) : error}
-        </div>
-      )}
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', border: '1px solid #E5E7EB' }}>
         <div>
-          <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-            Username
+          <label htmlFor="full_name" className="block text-sm font-medium text-gray-700">
+            Full Name
           </label>
+          <input
+            type="text"
+            id="full_name"
+            name="full_name"
+            value={formData.full_name}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md px-3 py-2"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="city" className="block text-sm font-medium text-gray-700">
+            City
+          </label>
+          <input
+            type="text"
+            id="city"
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            className="mt-1 block w-full border rounded-md px-3 py-2"
+          />
+        </div>
+        
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Username *</label>
           <input
             type="text"
             id="username"
@@ -83,10 +103,9 @@ const Register = () => {
           />
         </div>
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-            Email
-          </label>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Email *</label>
           <input
             type="email"
             id="email"

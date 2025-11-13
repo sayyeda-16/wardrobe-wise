@@ -1,6 +1,6 @@
-// src/App.js
-import React, { useState } from "react";
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from "react-router-dom";
+import  React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Wardrobe from "./pages/Wardrobe";
@@ -9,12 +9,14 @@ import AddItem from "./pages/AddItem";
 
 function Navbar() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const handleLogout = () => {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
+    logout();
     navigate("/login");
   };
+
+  if (!user) return null; // Hide navbar when logged out
 
   return (
     <nav
@@ -44,7 +46,6 @@ function Navbar() {
             border: "1px solid white",
             borderRadius: "8px",
             textDecoration: "none",
-            fontSize: "16px",
           }}
         >
           👕 My Wardrobe
@@ -59,7 +60,6 @@ function Navbar() {
             border: "1px solid white",
             borderRadius: "8px",
             textDecoration: "none",
-            fontSize: "16px",
           }}
         >
           🛍️ Marketplace
@@ -74,7 +74,6 @@ function Navbar() {
             border: "1px solid white",
             borderRadius: "8px",
             textDecoration: "none",
-            fontSize: "16px",
           }}
         >
           ➕ Add Item
@@ -89,13 +88,65 @@ function Navbar() {
             border: "none",
             borderRadius: "8px",
             cursor: "pointer",
-            fontSize: "16px",
           }}
         >
           🚪 Logout
         </button>
       </div>
     </nav>
+  );
+}
+
+// ✅ Protected route wrapper
+function PrivateRoute({ children }) {
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/login" />;
+}
+
+function AppRoutes() {
+  const { user } = useAuth();
+
+  return (
+    <Routes>
+      {/* Public routes */}
+      <Route
+        path="/login"
+        element={user ? <Navigate to="/wardrobe" /> : <Login />}
+      />
+      <Route
+        path="/register"
+        element={user ? <Navigate to="/wardrobe" /> : <Register />}
+      />
+
+      {/* Protected routes */}
+      <Route
+        path="/wardrobe"
+        element={
+          <PrivateRoute>
+            <Wardrobe />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/marketplace"
+        element={
+          <PrivateRoute>
+            <Marketplace />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/add-item"
+        element={
+          <PrivateRoute>
+            <AddItem />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Default route */}
+      <Route path="*" element={<Navigate to="/login" />} />
+    </Routes>
   );
 }
 
@@ -112,27 +163,12 @@ function App() {
   };
 
   return (
-    <Router>
-      <Navbar />
-
-      <main>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-
-          <Route path="/wardrobe" element={<Wardrobe items={wardrobeItems} />} />
-          <Route path="/marketplace" element={<Marketplace />} />
-          <Route
-            path="/add-item"
-            element={<AddItem onAddItem={handleAddItem} />}
-          />
-
-          {/* Default route */}
-          <Route path="*" element={<Login />} />
-        </Routes>
-      </main>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Navbar />
+        <AppRoutes />
+      </Router>
+    </AuthProvider>
   );
 }
-
 export default App;
