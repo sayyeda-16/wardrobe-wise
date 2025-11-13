@@ -1,7 +1,9 @@
 import React from 'react';
-import { FaTag, FaLeaf, FaRecycle, FaSeedling, FaTshirt, FaShoePrints, FaGem } from 'react-icons/fa';
+import { Link } from 'react-router-dom'; // Import Link for navigation
+import { FaTag, FaLeaf, FaRecycle, FaSeedling, FaTshirt, FaShoePrints, FaGem, FaShoppingCart } from 'react-icons/fa';
 
-function ItemCard({ item, onSell, onDelete }) {
+// Accept isMarketplace prop to determine button type
+function ItemCard({ item, onSell, onDelete, isMarketplace = false }) { 
   const getConditionColor = (condition) => {
     switch (condition) {
       case 'New': return '#10b981';
@@ -29,10 +31,14 @@ function ItemCard({ item, onSell, onDelete }) {
       { background: '#d4e6a4', border: '#a4b884', accent: '#3a5c1e' }, // Dark sage
       { background: '#f5f9eb', border: '#e2edc4', accent: '#87a96b' }, // Pale green
     ];
-    return colors[itemId % colors.length];
+    // Using item.id for color assignment for Marketplace items
+    return colors[(item.id || item.item_id) % colors.length];
   };
 
   const cardColor = getCardColor(item.item_id || item.id);
+  
+  // Format price if it exists (only for Marketplace items)
+  const formatPrice = (cents) => `$${(cents / 100).toFixed(2)}`;
 
   return (
     <div style={{
@@ -46,9 +52,17 @@ function ItemCard({ item, onSell, onDelete }) {
           ...styles.title,
           color: cardColor.accent,
         }}>
-          {item.item_name || item.name}
+          {item.item_name || item.name || item.title} {/* Added item.title for Marketplace */}
         </h3>
-        {item.lifecycle === 'Sold' && (
+        {/* Marketplace Price/Tag */}
+        {isMarketplace && item.list_price_cents && (
+             <div style={styles.priceTag}>
+                <FaTag style={{ fontSize: '10px' }} />
+                <span style={{ fontWeight: '700' }}>{formatPrice(item.list_price_cents)}</span>
+            </div>
+        )}
+        {/* Wardrobe Listed Badge */}
+        {!isMarketplace && item.lifecycle === 'Sold' && (
           <div style={styles.soldBadge}>
             <FaTag style={styles.soldIcon} />
             Listed
@@ -59,7 +73,7 @@ function ItemCard({ item, onSell, onDelete }) {
       {/* Brand and Category */}
       <div style={styles.brandSection}>
         <span style={styles.brand}>
-          {item.brand_name || item.brand}
+          {item.brand_name || item.brand || item.seller || 'Unknown Seller'} {/* Added item.seller for Marketplace */}
         </span>
         <div style={styles.category}>
           {getCategoryIcon(item.category_name || item.category)}
@@ -71,11 +85,11 @@ function ItemCard({ item, onSell, onDelete }) {
       <div style={styles.details}>
         <div style={styles.detailRow}>
           <span style={styles.detailLabel}>Size:</span>
-          <span style={styles.detailValue}>{item.size_label || item.size}</span>
+          <span style={styles.detailValue}>{item.size_label || item.size || 'N/A'}</span>
         </div>
         <div style={styles.detailRow}>
           <span style={styles.detailLabel}>Color:</span>
-          <span style={styles.detailValue}>{item.color}</span>
+          <span style={styles.detailValue}>{item.color || 'N/A'}</span>
         </div>
         <div style={styles.detailRow}>
           <span style={styles.detailLabel}>Condition:</span>
@@ -94,30 +108,50 @@ function ItemCard({ item, onSell, onDelete }) {
         )}
       </div>
 
-      {/* Actions */}
+      {/* Actions (Conditional based on isMarketplace) */}
       <div style={styles.actions}>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onSell(item);
-          }}
-          style={{
-            ...styles.sellButton,
-            backgroundColor: cardColor.accent,
-          }}
-        >
-          <FaRecycle style={styles.buttonIcon} />
-          Resell
-        </button>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(item);
-          }}
-          style={styles.deleteButton}
-        >
-          Remove
-        </button>
+        {isMarketplace ? (
+          // Marketplace Action: Buy Now button
+          <Link 
+            to="/checkout" 
+            // Pass item data to Checkout page state
+            state={{ item: item }} 
+            style={{
+              ...styles.sellButton,
+              backgroundColor: cardColor.accent,
+              flex: 1, // Full width for Buy button
+            }}
+          >
+            <FaShoppingCart style={styles.buttonIcon} />
+            Buy Now
+          </Link>
+        ) : (
+          // Wardrobe Actions: Resell and Remove buttons
+          <>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onSell(item);
+              }}
+              style={{
+                ...styles.sellButton,
+                backgroundColor: cardColor.accent,
+              }}
+            >
+              <FaRecycle style={styles.buttonIcon} />
+              Resell
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(item);
+              }}
+              style={styles.deleteButton}
+            >
+              Remove
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
@@ -133,6 +167,7 @@ const styles = {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
+    className: 'item-card', // Applied for hover effect
   },
   header: {
     display: 'flex',
@@ -146,6 +181,19 @@ const styles = {
     fontWeight: '600',
     lineHeight: '1.3',
     flex: 1,
+  },
+  priceTag: { // NEW style for marketplace price
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    padding: '4px 8px',
+    backgroundColor: '#fffbe5',
+    color: '#a16207',
+    borderRadius: '12px',
+    fontSize: '14px',
+    fontWeight: '500',
+    marginLeft: '8px',
+    border: '1px solid #fde047'
   },
   soldBadge: {
     display: 'flex',
@@ -210,6 +258,7 @@ const styles = {
     display: 'flex',
     gap: '8px',
     marginTop: 'auto',
+    textDecoration: 'none', // Important for Link component style
   },
   sellButton: {
     flex: 1,
@@ -225,6 +274,8 @@ const styles = {
     fontWeight: '600',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+    textDecoration: 'none', // Ensure Link doesn't have underline
+    className: 'sell-button', // Applied for hover effect
   },
   deleteButton: {
     padding: '8px 12px',
@@ -236,13 +287,14 @@ const styles = {
     fontWeight: '500',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
+    className: 'delete-button', // Applied for hover effect
   },
   buttonIcon: {
     fontSize: '11px',
   },
 };
 
-// Add hover effects
+// Add hover effects and class assignments
 const cardStyleSheet = document.createElement('style');
 cardStyleSheet.innerText = `
   .item-card:hover {
@@ -263,17 +315,5 @@ cardStyleSheet.innerText = `
 
 document.head.appendChild(cardStyleSheet);
 
-// Apply hover classes
-Object.assign(styles.card, {
-  className: 'item-card',
-});
-
-Object.assign(styles.sellButton, {
-  className: 'sell-button',
-});
-
-Object.assign(styles.deleteButton, {
-  className: 'delete-button',
-});
 
 export default ItemCard;

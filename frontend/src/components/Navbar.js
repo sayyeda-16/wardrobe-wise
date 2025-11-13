@@ -1,16 +1,31 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { FaLeaf, FaTshirt, FaStore, FaPlus, FaUser, FaSignOutAlt, FaSeedling } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext'; 
+// Import additional icons needed for User Profile, Settings, and Stats (Developer 1)
+import { 
+  FaLeaf, FaTshirt, FaStore, FaPlus, FaUser, FaSignOutAlt, FaSeedling, 
+  FaCog, FaChartBar, FaUserCircle 
+} from 'react-icons/fa';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
+  // Updated navigation items to include all 4-Day Sprint features
   const navItems = [
-    { path: '/wardrobe', label: 'My Wardrobe', icon: FaTshirt }, // Changed FaShirt to FaTshirt
-    { path: '/marketplace', label: 'Marketplace', icon: FaStore },
+    // Developer 1 (Day 4) - Wardrobe Stats
+    { path: '/stats', label: 'Stats', icon: FaChartBar }, 
+    // Developer 1 (Day 1 & 3) - Core Items
+    { path: '/wardrobe', label: 'My Wardrobe', icon: FaTshirt }, 
     { path: '/add-item', label: 'Add Item', icon: FaPlus },
+    // Developer 2 (Day 1 & 2) - Marketplace
+    { path: '/marketplace', label: 'Marketplace', icon: FaStore },
+  ];
+  
+  // User Dropdown/Secondary Links (Developer 1 - Day 2)
+  const userLinks = [
+    { path: '/profile', label: 'Profile', icon: FaUserCircle },
+    { path: '/settings', label: 'Settings', icon: FaCog },
   ];
 
   return (
@@ -42,6 +57,7 @@ const Navbar = () => {
                     ...styles.navLink,
                     ...(isActive ? styles.navLinkActive : {})
                   }}
+                  className="eco-nav-link" // For inline styles/hover effects
                 >
                   <IconComponent style={styles.navIcon} />
                   {item.label}
@@ -51,10 +67,26 @@ const Navbar = () => {
           </div>
         )}
 
-        {/* User Section */}
+        {/* User Section - ALERT SYSTEM REMOVED */}
         <div style={styles.userSection}>
           {user ? (
             <>
+              {/* User Profile Links */}
+              <div style={styles.userLinksContainer}>
+                {userLinks.map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      style={styles.profileLink}
+                    >
+                      <IconComponent style={styles.navIcon} />
+                    </Link>
+                  );
+                })}
+              </div>
+
               <div style={styles.userInfo}>
                 <div style={styles.userWelcome}>
                   <FaSeedling style={styles.ecoIcon} />
@@ -65,6 +97,7 @@ const Navbar = () => {
               <button
                 onClick={logout}
                 style={styles.logoutButton}
+                className="eco-logout-btn" // For inline styles/hover effects
               >
                 <FaSignOutAlt style={styles.logoutIcon} />
                 Sign Out
@@ -75,12 +108,14 @@ const Navbar = () => {
               <Link
                 to="/login"
                 style={styles.loginButton}
+                className="eco-login-btn"
               >
                 Sign In
               </Link>
               <Link
                 to="/register"
                 style={styles.registerButton}
+                className="eco-register-btn"
               >
                 <FaUser style={styles.registerIcon} />
                 Join Sustainable Community
@@ -134,7 +169,10 @@ const Navbar = () => {
   );
 };
 
+// ... (Rest of the styles object is unchanged)
+
 const styles = {
+  // Existing styles...
   navbar: {
     background: 'linear-gradient(135deg, #556b2f 0%, #6b8e23 100%)',
     padding: '0',
@@ -319,6 +357,22 @@ const styles = {
   },
   registerIcon: {
     fontSize: '14px',
+  },
+  // NEW STYLE: Container for profile/settings links and alert icon
+  userLinksContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginRight: '10px', // Space between links and welcome message
+  },
+  profileLink: {
+    display: 'flex',
+    padding: '8px',
+    color: '#d4e6a4',
+    textDecoration: 'none',
+    borderRadius: '50%',
+    transition: 'all 0.3s ease',
+    opacity: 0.8,
   },
 };
 
