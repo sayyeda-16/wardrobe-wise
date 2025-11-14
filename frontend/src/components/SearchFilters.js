@@ -1,10 +1,18 @@
 // src/components/SearchFilters.js
 import React, { useState } from 'react';
 
-// Assuming an array of categories and a maximum price from the backend context
+// NOTE: Categories and Conditions should be dynamically loaded from the API
 const MAX_PRICE = 50000; // $500.00 in cents
+const HARDCODED_CATEGORIES = [
+    { id: 1, name: 'Tops' }, 
+    { id: 2, name: 'Bottoms' }, 
+    { id: 3, name: 'Outerwear' }, 
+    { id: 4, name: 'Footwear' }
+];
+const CONDITIONS = ['New', 'Like New', 'Good', 'Fair', 'Worn'];
 
-const SearchFilters = ({ categories = [], currentFilters, onFilterChange }) => {
+
+const SearchFilters = ({ categories = HARDCODED_CATEGORIES, currentFilters, onFilterChange }) => {
   const [localPriceRange, setLocalPriceRange] = useState(currentFilters.priceRange || [0, MAX_PRICE]);
   const [searchTimer, setSearchTimer] = useState(null);
 
@@ -21,13 +29,14 @@ const SearchFilters = ({ categories = [], currentFilters, onFilterChange }) => {
     setSearchTimer(newTimer);
   };
 
-  const handleCategoryChange = (e) => {
-    onFilterChange('category', e.target.value);
+  const handleSelectChange = (e) => {
+    onFilterChange(e.target.name, e.target.value);
   };
   
   // Update local state immediately, but debounce applying the filter
   const handlePriceChange = (e) => {
-    const newRange = [e.target.value, localPriceRange[1]]; // Simple single-slider (min) example for brevity
+    // This maintains the simplified min-price slider logic from the original code
+    const newRange = [e.target.value, localPriceRange[1]]; 
     setLocalPriceRange(newRange);
     
     clearTimeout(searchTimer);
@@ -38,6 +47,7 @@ const SearchFilters = ({ categories = [], currentFilters, onFilterChange }) => {
   };
 
   const formatPrice = (cents) => `$${(cents / 100).toFixed(2)}`;
+  const baseSelectClass = "mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm";
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md space-y-4">
@@ -55,22 +65,40 @@ const SearchFilters = ({ categories = [], currentFilters, onFilterChange }) => {
         />
       </div>
 
-      {/* Category Filter (Dropdown) */}
-      <div>
-        <label htmlFor="category" className="block text-sm font-medium text-gray-700">Category</label>
-        <select
-          id="category"
-          value={currentFilters.category || ''}
-          onChange={handleCategoryChange}
-          className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm"
-        >
-          <option value="">All Categories</option>
-          {categories.map((cat) => (
-            <option key={cat.id} value={cat.name}>
-              {cat.name}
-            </option>
-          ))}
-        </select>
+      <div className="grid grid-cols-2 gap-4">
+        {/* Category Filter (Dropdown) */}
+        <div>
+          <label htmlFor="category" className="block text-sm font-medium text-gray-700">Category</label>
+          <select
+            id="category"
+            name="category"
+            value={currentFilters.category || ''}
+            onChange={handleSelectChange}
+            className={baseSelectClass}
+          >
+            <option value="">All Categories</option>
+            {categories.map((cat) => (
+              <option key={cat.id} value={cat.name}>
+                {cat.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Condition Filter (NEW: Required for Marketplace Enhancement) */}
+        <div>
+          <label htmlFor="condition" className="block text-sm font-medium text-gray-700">Condition</label>
+          <select
+            id="condition"
+            name="condition"
+            value={currentFilters.condition || ''}
+            onChange={handleSelectChange}
+            className={baseSelectClass}
+          >
+            <option value="">All Conditions</option>
+            {CONDITIONS.map(cond => <option key={cond} value={cond}>{cond}</option>)}
+          </select>
+        </div>
       </div>
       
       {/* Price Range Slider (Simplified to a min-price slider for brevity) */}

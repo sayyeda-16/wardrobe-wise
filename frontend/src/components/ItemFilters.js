@@ -1,119 +1,102 @@
+// src/components/ItemFilters.js
 import React from 'react';
 
+// NOTE: Categories and Conditions are temporarily hardcoded, as per current implementation, 
+// but should be dynamically loaded in a future refactor.
+const CATEGORIES = ['Tops', 'Bottoms', 'Outerwear', 'Footwear', 'Accessories', 'Jewelry'];
+const CONDITIONS = ['New', 'Like New', 'Good', 'Fair', 'Worn'];
+const LIFECYCLE_STATUSES = ['Active', 'Listed', 'Sold', 'Donated', 'Discarded'];
+
 function ItemFilters({ filters, onFilterChange, onClearFilters }) {
+  const handleSelectChange = (e) => {
+    onFilterChange(e.target.name, e.target.value);
+  };
+  
+  const handleInputChange = (e) => {
+    onFilterChange(e.target.name, e.target.value);
+  };
+
+  const baseSelectClass = "w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-sm focus:border-indigo-500 focus:ring-indigo-500 shadow-sm";
+  const baseInputClass = "w-full rounded-md border-gray-300 py-2 px-3 text-sm focus:border-indigo-500 focus:ring-indigo-500 shadow-sm";
+
   return (
-    <div style={styles.container}>
-      <div style={styles.filtersRow}>
-        <div style={styles.filterItem}>
+    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
+      <h3 className="text-md font-semibold text-gray-800 mb-3">Wardrobe Filters</h3>
+      <div className="flex flex-wrap items-center gap-4">
+        
+        {/* Category Filter */}
+        <div className="flex-1 min-w-[120px]">
           <select 
             name="category" 
-            value={filters.category} 
-            onChange={onFilterChange}
-            style={styles.select}
+            value={filters.category || ''} 
+            onChange={handleSelectChange}
+            className={baseSelectClass}
           >
             <option value="">All Categories</option>
-            <option value="Tops">Tops</option>
-            <option value="Bottoms">Bottoms</option>
-            <option value="Dresses">Dresses</option>
-            <option value="Shoes">Shoes</option>
-            <option value="Accessories">Accessories</option>
+            {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
           </select>
         </div>
 
-        <div style={styles.filterItem}>
+        {/* Lifecycle Filter (NEW: Crucial for Wardrobe Management) */}
+        <div className="flex-1 min-w-[120px]">
+          <select 
+            name="lifecycle" 
+            value={filters.lifecycle || ''} 
+            onChange={handleSelectChange}
+            className={baseSelectClass}
+          >
+            <option value="">Status (All)</option>
+            {LIFECYCLE_STATUSES.map(status => <option key={status} value={status}>{status}</option>)}
+          </select>
+        </div>
+
+        {/* Condition Filter */}
+        <div className="flex-1 min-w-[120px]">
+          <select 
+            name="condition" 
+            value={filters.condition || ''} 
+            onChange={handleSelectChange}
+            className={baseSelectClass}
+          >
+            <option value="">All Conditions</option>
+            {CONDITIONS.map(cond => <option key={cond} value={cond}>{cond}</option>)}
+          </select>
+        </div>
+
+        {/* Brand Filter */}
+        <div className="flex-1 min-w-[120px]">
           <input
             type="text"
             name="brand"
-            value={filters.brand}
-            onChange={onFilterChange}
-            placeholder="Brand"
-            style={styles.input}
+            value={filters.brand || ''}
+            onChange={handleInputChange}
+            placeholder="Search Brand"
+            className={baseInputClass}
           />
         </div>
 
-        <div style={styles.filterItem}>
+        {/* Color Filter */}
+        <div className="flex-1 min-w-[120px]">
           <input
             type="text"
             name="color"
-            value={filters.color}
-            onChange={onFilterChange}
-            placeholder="Color"
-            style={styles.input}
+            value={filters.color || ''}
+            onChange={handleInputChange}
+            placeholder="Search Color"
+            className={baseInputClass}
           />
         </div>
-
-        <div style={styles.filterItem}>
-          <select 
-            name="condition" 
-            value={filters.condition} 
-            onChange={onFilterChange}
-            style={styles.select}
-          >
-            <option value="">All Conditions</option>
-            <option value="New">New</option>
-            <option value="Like New">Like New</option>
-            <option value="Good">Good</option>
-            <option value="Fair">Fair</option>
-          </select>
-        </div>
-
-        <button onClick={onClearFilters} style={styles.clearButton}>
+        
+        {/* Clear Button */}
+        <button 
+          onClick={onClearFilters} 
+          className="px-4 py-2 bg-gray-600 text-white rounded-md text-sm font-medium hover:bg-gray-700 transition duration-150 flex-shrink-0 h-[38px]"
+        >
           Clear
         </button>
       </div>
     </div>
   );
 }
-
-const styles = {
-  container: {
-    backgroundColor: '#f8f9fa',
-    padding: '15px 20px',
-    borderRadius: '8px',
-    border: '1px solid #e9ecef',
-    marginBottom: '20px',
-  },
-  filtersRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    flexWrap: 'wrap',
-  },
-  filterItem: {
-    flex: '1',
-    minWidth: '120px',
-  },
-  select: {
-    width: '100%',
-    padding: '8px 10px',
-    border: '1px solid #cbd5e0',
-    borderRadius: '6px',
-    fontSize: '14px',
-    backgroundColor: 'white',
-    height: '36px',
-  },
-  input: {
-    width: '100%',
-    padding: '8px 10px',
-    border: '1px solid #cbd5e0',
-    borderRadius: '6px',
-    fontSize: '14px',
-    backgroundColor: 'white',
-    height: '36px',
-    boxSizing: 'border-box',
-  },
-  clearButton: {
-    padding: '8px 16px',
-    backgroundColor: '#6b7280',
-    color: 'white',
-    border: 'none',
-    borderRadius: '6px',
-    fontSize: '14px',
-    cursor: 'pointer',
-    height: '36px',
-    whiteSpace: 'nowrap',
-    flexShrink: 0,
-  },
-};
 
 export default ItemFilters;
