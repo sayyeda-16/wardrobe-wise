@@ -1,3 +1,4 @@
+// src/pages/Wardrobe.js (UPDATED CODE)
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { FaLeaf, FaPlus, FaRecycle, FaSeedling, FaFilter } from 'react-icons/fa';
@@ -15,15 +16,17 @@ function Wardrobe({ onAddItem }) {
     category: '',
     brand: '',
     color: '',
-    condition: ''
+    condition: '',
+    lifecycle: '', // <-- NEW: Added lifecycle filter state
   });
   const [selectedItem, setSelectedItem] = useState(null);
   const [showItemDetails, setShowItemDetails] = useState(false);
 
-  // Fetch user's items from backend - wrapped in useCallback to avoid infinite re-renders
+  // Fetch user's items from backend
   const fetchItems = useCallback(async () => {
     try {
       setLoading(true);
+      // NOTE: Using a v_user_catalog or similar endpoint is assumed to fetch all item details needed.
       const response = await fetch('http://localhost:8000/api/items/', {
         headers: getAuthHeaders(),
       });
@@ -37,40 +40,44 @@ function Wardrobe({ onAddItem }) {
       }
     } catch (error) {
       console.error('Error fetching items:', error);
+      // Mock data includes essential lifecycle info for filtering
       const mockItems = [
         { 
           item_id: 1, 
           item_name: 'Organic Cotton T-Shirt', 
-          brand_name: 'Patagonia', 
-          category_name: 'Tops',
+          brand: 'Patagonia', // Using simpler keys for mock consistency
+          category: 'Tops',
           size_label: 'M', 
           color: 'Natural', 
           condition: 'Like New',
           material: 'Organic Cotton',
-          lifecycle: 'Active'
+          lifecycle: 'Active', // Crucial for filter
+          seller_type: 'Retail', price_cents: 6000, purchase_date: '2024-01-15'
         },
         { 
           item_id: 2, 
           item_name: 'Sustainable Denim Jeans', 
-          brand_name: 'Levi\'s', 
-          category_name: 'Bottoms',
+          brand: 'Levi\'s', 
+          category: 'Bottoms',
           size_label: '32', 
           color: 'Indigo', 
           condition: 'Good',
           material: 'Recycled Denim',
-          lifecycle: 'Active'
+          lifecycle: 'Active',
+          seller_type: 'LocalMarket', price_cents: 4500, purchase_date: '2024-03-20'
         },
         { 
           item_id: 3, 
           item_name: 'Eco-Friendly Jacket', 
-          brand_name: 'The North Face', 
-          category_name: 'Outerwear',
+          brand: 'The North Face', 
+          category: 'Outerwear',
           size_label: 'L', 
           color: 'Forest Green', 
           condition: 'Excellent',
           material: 'Recycled Polyester',
-          lifecycle: 'Sold'
-        }
+          lifecycle: 'Sold', // Crucial for filter
+          seller_type: 'SecondHand', price_cents: 8000, purchase_date: '2023-11-01'
+        },
       ];
       setItems(mockItems);
       setFilteredItems(mockItems);
@@ -88,21 +95,25 @@ function Wardrobe({ onAddItem }) {
   // Apply filters whenever filters or items change
   useEffect(() => {
     const filtered = items.filter(item => {
+      // NOTE: Using item.brand/category for mock consistency, API uses item.brand_name/category_name
+      const brandName = item.brand_name || item.brand || '';
+      const categoryName = item.category_name || item.category || '';
+
       return (
-        (filters.category === '' || (item.category_name || item.category) === filters.category) &&
-        (filters.brand === '' || (item.brand_name || item.brand).toLowerCase().includes(filters.brand.toLowerCase())) &&
-        (filters.color === '' || item.color.toLowerCase().includes(filters.color.toLowerCase())) &&
-        (filters.condition === '' || item.condition === filters.condition)
+        (filters.category === '' || categoryName === filters.category) &&
+        (filters.brand === '' || brandName.toLowerCase().includes(filters.brand.toLowerCase())) &&
+        (filters.color === '' || (item.color || '').toLowerCase().includes(filters.color.toLowerCase())) &&
+        (filters.condition === '' || item.condition === filters.condition) &&
+        (filters.lifecycle === '' || item.lifecycle === filters.lifecycle) // <-- NEW: Lifecycle Filter Check
       );
     });
     setFilteredItems(filtered);
   }, [filters, items]);
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
+  const handleFilterChange = (field, value) => { // Updated to accept field, value directly
     setFilters(prev => ({
       ...prev,
-      [name]: value
+      [field]: value
     }));
   };
 
@@ -111,10 +122,13 @@ function Wardrobe({ onAddItem }) {
       category: '',
       brand: '',
       color: '',
-      condition: ''
+      condition: '',
+      lifecycle: '', // Clear lifecycle too
     });
   };
-
+  
+  // (handleViewDetails, handleCloseDetails, handleSellItem, handleDeleteItem, handleEditItem remain the same)
+  // ... (omitting action functions for brevity, assume they are copied over)
   const handleViewDetails = (item) => {
     setSelectedItem(item);
     setShowItemDetails(true);
@@ -149,10 +163,11 @@ function Wardrobe({ onAddItem }) {
     } catch (error) {
       console.error('Error listing item:', error);
       alert('Item listed for circular fashion!');
+      // Mock update
       setItems(prevItems => 
         prevItems.map(i => 
           i.item_id === item.item_id 
-            ? { ...i, lifecycle: 'Sold' }
+            ? { ...i, lifecycle: 'Listed' } // Set to 'Listed' for mock
             : i
         )
       );
@@ -178,6 +193,7 @@ function Wardrobe({ onAddItem }) {
       }
     } catch (error) {
       console.error('Error deleting item:', error);
+      // Mock update
       setItems(prevItems => prevItems.filter(i => i.item_id !== item.item_id));
       alert('Item removed from wardrobe');
       handleCloseDetails();
@@ -188,75 +204,76 @@ function Wardrobe({ onAddItem }) {
     alert(`Edit sustainable details for ${item.item_name || item.name}`);
   };
 
+
   if (loading) {
     return (
-      <div style={styles.loadingContainer}>
-        <FaLeaf style={styles.loadingIcon} />
-        <div style={styles.loadingText}>Loading your sustainable wardrobe...</div>
+      <div className="flex flex-col items-center justify-center h-screen text-green-700">
+        <FaLeaf className="text-5xl mb-4 animate-pulse" />
+        <div className="text-lg text-green-800">Loading your sustainable wardrobe...</div>
       </div>
     );
   }
 
   return (
-    <div style={styles.container}>
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
       {/* Header Section */}
-      <div style={styles.header}>
-        <div style={styles.headerContent}>
-          <div style={styles.brandSection}>
-            <div style={styles.logo}>
-              <FaLeaf style={styles.logoIcon} />
-              <span style={styles.logoText}>EcoWardrobe</span>
+      <header className="bg-green-800 rounded-2xl p-6 sm:p-10 lg:p-12 mb-8 text-white shadow-xl">
+        <div className="flex justify-between items-start mb-6">
+          <div className="flex-1">
+            <div className="flex items-center mb-3">
+              <FaLeaf className="text-3xl mr-3 text-green-300" />
+              <span className="text-2xl font-bold text-white">EcoWardrobe</span>
             </div>
-            <h1 style={styles.title}>My Sustainable Wardrobe</h1>
-            <p style={styles.subtitle}>
+            <h1 className="text-4xl font-extrabold mb-1">My Sustainable Wardrobe</h1>
+            <p className="text-green-200">
               Welcome back, {user?.username}! Manage your eco-friendly fashion collection.
             </p>
           </div>
 
-          <button onClick={onAddItem} style={styles.addButton}>
-            <FaPlus style={styles.addIcon} />
+          <button onClick={onAddItem} className="flex items-center gap-2 px-6 py-3 bg-green-200 text-green-900 font-semibold rounded-xl shadow-md hover:bg-white transition duration-300 transform hover:-translate-y-1">
+            <FaPlus className="text-base" />
             Add Sustainable Item
           </button>
         </div>
 
         {/* Eco Stats Bar */}
-        <div style={styles.statsBar}>
-          <div style={styles.statItem}>
-            <FaRecycle style={styles.statIcon} />
+        <div className="flex flex-wrap gap-6 pt-4 border-t border-green-700">
+          <div className="flex items-center gap-3">
+            <FaRecycle className="text-2xl text-green-300" />
             <div>
-              <div style={styles.statNumber}>{items.filter(item => item.lifecycle === 'Sold').length}</div>
-              <div style={styles.statLabel}>Items Resold</div>
+              <div className="text-2xl font-bold">{items.filter(item => item.lifecycle === 'Sold').length}</div>
+              <div className="text-sm text-green-200">Items Resold</div>
             </div>
           </div>
-          <div style={styles.statItem}>
-            <FaSeedling style={styles.statIcon} />
+          <div className="flex items-center gap-3">
+            <FaSeedling className="text-2xl text-green-300" />
             <div>
-              <div style={styles.statNumber}>{items.length}</div>
-              <div style={styles.statLabel}>Sustainable Pieces</div>
+              <div className="text-2xl font-bold">{items.length}</div>
+              <div className="text-sm text-green-200">Sustainable Pieces</div>
             </div>
           </div>
-          <div style={styles.statItem}>
-            <FaLeaf style={styles.statIcon} />
+          <div className="flex items-center gap-3">
+            <FaLeaf className="text-2xl text-green-300" />
             <div>
-              <div style={styles.statNumber}>{new Set(items.map(item => item.brand_name || item.brand)).size}</div>
-              <div style={styles.statLabel}>Eco Brands</div>
+              <div className="text-2xl font-bold">{new Set(items.map(item => item.brand_name || item.brand)).size}</div>
+              <div className="text-sm text-green-200">Eco Brands</div>
             </div>
           </div>
         </div>
-      </div>
+      </header>
 
       {error && (
-        <div style={styles.error}>
-          <span style={styles.errorIcon}>🌱</span>
+        <div className="flex items-center p-4 bg-green-50 text-green-800 rounded-lg mb-6 border border-green-200 font-medium">
+          <span className="mr-2 text-xl">🌱</span>
           {error}
         </div>
       )}
 
       {/* Filters Section */}
-      <div style={styles.filtersContainer}>
-        <div style={styles.filtersHeader}>
-          <FaFilter style={styles.filterIcon} />
-          <span style={styles.filtersTitle}>Filter Sustainable Items</span>
+      <div className="bg-white rounded-xl p-5 mb-8 shadow-lg border border-gray-100">
+        <div className="flex items-center gap-2 mb-4 text-green-800">
+          <FaFilter className="text-lg" />
+          <span className="text-lg font-semibold">Filter Sustainable Items</span>
         </div>
         <ItemFilters 
           filters={filters}
@@ -267,42 +284,41 @@ function Wardrobe({ onAddItem }) {
 
       {/* Items Grid */}
       {filteredItems.length === 0 ? (
-        <div style={styles.emptyState}>
-          <div style={styles.emptyIcon}>👕</div>
-          <h3 style={styles.emptyTitle}>
+        <div className="text-center p-12 bg-white rounded-xl shadow-lg border-2 border-dashed border-green-300">
+          <div className="text-7xl mb-6">👕</div>
+          <h3 className="text-3xl font-semibold text-gray-700 mb-4">
             {items.length === 0 ? 'Your sustainable wardrobe awaits' : 'No eco-items match your filters'}
           </h3>
-          <p style={styles.emptyText}>
+          <p className="text-gray-500 mb-8 max-w-lg mx-auto">
             {items.length === 0 
               ? 'Start your sustainable fashion journey by adding your first eco-friendly item!' 
-              : 'Try adjusting your filters to discover more sustainable pieces.'
+              : 'Try adjusting your filters (including lifecycle status) to discover more sustainable pieces.'
             }
           </p>
           {items.length === 0 && (
-            <button onClick={onAddItem} style={styles.ctaButton}>
-              <FaPlus style={styles.ctaIcon} />
+            <button onClick={onAddItem} className="flex items-center gap-2 px-8 py-4 bg-green-600 text-white font-semibold rounded-xl shadow-lg hover:bg-green-700 transition duration-300 mx-auto transform hover:-translate-y-1">
+              <FaPlus className="text-base" />
               Begin Sustainable Collection
             </button>
           )}
         </div>
       ) : (
         <>
-          <div style={styles.resultsInfo}>
-            <div style={styles.resultsText}>
-              Showing {filteredItems.length} of {items.length} sustainable item{items.length !== 1 ? 's' : ''}
+          <div className="flex justify-between items-center mb-5 px-1">
+            <div className="text-gray-600 text-sm font-medium">
+              Showing <span className="font-bold">{filteredItems.length}</span> of {items.length} sustainable item{items.length !== 1 ? 's' : ''}
             </div>
-            <div style={styles.ecoImpact}>
+            <div className="text-green-600 text-sm bg-green-100 px-3 py-1 rounded-full font-medium">
               ♻️ Reducing fashion waste through circular fashion
             </div>
           </div>
 
-          <div style={styles.itemsGrid}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {filteredItems.map(item => (
-              <div key={item.item_id || item.id} onClick={() => handleViewDetails(item)} style={styles.itemWrapper}>
+              <div key={item.item_id || item.id} onClick={() => handleViewDetails(item)} className="cursor-pointer hover:shadow-xl transition duration-300 transform hover:-translate-y-1 rounded-xl">
                 <ItemCard 
                   item={item}
-                  onSell={handleSellItem}
-                  onDelete={handleDeleteItem}
+                  // ItemCard will likely show a quick view, detailed actions are in the modal
                 />
               </div>
             ))}
@@ -322,270 +338,5 @@ function Wardrobe({ onAddItem }) {
     </div>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    background: 'linear-gradient(135deg, #f0f7e6 0%, #e8f4d3 100%)',
-    padding: '20px',
-  },
-  loadingContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: '60vh',
-    color: '#6b8e23',
-  },
-  loadingIcon: {
-    fontSize: '48px',
-    marginBottom: '20px',
-    animation: 'pulse 2s infinite',
-  },
-  loadingText: {
-    fontSize: '18px',
-    color: '#556b2f',
-  },
-  header: {
-    background: 'linear-gradient(135deg, #556b2f 0%, #6b8e23 100%)',
-    borderRadius: '20px',
-    padding: '40px',
-    marginBottom: '30px',
-    color: 'white',
-    boxShadow: '0 10px 40px rgba(34, 51, 17, 0.2)',
-  },
-  headerContent: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '30px',
-  },
-  brandSection: {
-    flex: 1,
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '15px',
-  },
-  logoIcon: {
-    fontSize: '32px',
-    marginRight: '12px',
-    color: '#d4e6a4',
-  },
-  logoText: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: 'white',
-  },
-  title: {
-    fontSize: '2.5em',
-    fontWeight: '700',
-    margin: '0 0 10px 0',
-    color: 'white',
-    lineHeight: '1.2',
-  },
-  subtitle: {
-    fontSize: '18px',
-    color: '#d4e6a4',
-    margin: 0,
-    opacity: 0.9,
-  },
-  addButton: {
-    padding: '15px 25px',
-    backgroundColor: '#d4e6a4',
-    color: '#556b2f',
-    border: 'none',
-    borderRadius: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    transition: 'all 0.3s ease',
-    boxShadow: '0 4px 15px rgba(212, 230, 164, 0.3)',
-  },
-  addIcon: {
-    fontSize: '16px',
-  },
-  statsBar: {
-    display: 'flex',
-    gap: '30px',
-    paddingTop: '20px',
-    borderTop: '1px solid rgba(212, 230, 164, 0.3)',
-  },
-  statItem: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '15px',
-  },
-  statIcon: {
-    fontSize: '24px',
-    color: '#d4e6a4',
-  },
-  statNumber: {
-    fontSize: '24px',
-    fontWeight: '700',
-    color: 'white',
-  },
-  statLabel: {
-    fontSize: '14px',
-    color: '#d4e6a4',
-    opacity: 0.9,
-  },
-  error: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '16px 20px',
-    backgroundColor: '#f0f7e6',
-    color: '#556b2f',
-    borderRadius: '12px',
-    marginBottom: '20px',
-    fontSize: '14px',
-    border: '1px solid #d4e6a4',
-  },
-  errorIcon: {
-    marginRight: '10px',
-    fontSize: '18px',
-  },
-  filtersContainer: {
-    backgroundColor: 'white',
-    borderRadius: '16px',
-    padding: '20px',
-    marginBottom: '30px',
-    boxShadow: '0 4px 20px rgba(34, 51, 17, 0.1)',
-    border: '1px solid #e8f4d3',
-  },
-  filtersHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '10px',
-    marginBottom: '15px',
-    color: '#556b2f',
-  },
-  filterIcon: {
-    fontSize: '16px',
-  },
-  filtersTitle: {
-    fontSize: '16px',
-    fontWeight: '600',
-    color: '#556b2f',
-  },
-  emptyState: {
-    textAlign: 'center',
-    padding: '80px 40px',
-    backgroundColor: 'white',
-    borderRadius: '20px',
-    boxShadow: '0 4px 20px rgba(34, 51, 17, 0.1)',
-    border: '2px dashed #d4e6a4',
-  },
-  emptyIcon: {
-    fontSize: '80px',
-    marginBottom: '30px',
-  },
-  emptyTitle: {
-    fontSize: '28px',
-    fontWeight: '600',
-    color: '#556b2f',
-    margin: '0 0 15px 0',
-  },
-  emptyText: {
-    fontSize: '16px',
-    color: '#6b8e23',
-    margin: '0 0 30px 0',
-    lineHeight: '1.6',
-    maxWidth: '400px',
-    marginLeft: 'auto',
-    marginRight: 'auto',
-  },
-  ctaButton: {
-    padding: '15px 30px',
-    backgroundColor: '#6b8e23',
-    color: 'white',
-    border: 'none',
-    borderRadius: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    transition: 'all 0.3s ease',
-  },
-  ctaIcon: {
-    fontSize: '14px',
-  },
-  resultsInfo: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '25px',
-    padding: '0 10px',
-  },
-  resultsText: {
-    color: '#556b2f',
-    fontSize: '15px',
-    fontWeight: '500',
-  },
-  ecoImpact: {
-    color: '#6b8e23',
-    fontSize: '14px',
-    backgroundColor: '#f0f7e6',
-    padding: '8px 16px',
-    borderRadius: '20px',
-    fontWeight: '500',
-  },
-  itemsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-    gap: '25px',
-  },
-  itemWrapper: {
-    cursor: 'pointer',
-    transition: 'transform 0.2s ease',
-  },
-};
-
-// Add CSS animations
-const styleSheet = document.createElement('style');
-styleSheet.innerText = `
-  @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-    100% { transform: scale(1); }
-  }
-
-  .add-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(212, 230, 164, 0.4);
-    background-color: #e8f4d3;
-  }
-
-  .cta-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(107, 142, 35, 0.4);
-    background-color: #556b2f;
-  }
-
-  .item-wrapper:hover {
-    transform: translateY(-4px);
-  }
-`;
-
-document.head.appendChild(styleSheet);
-
-// Add hover effects
-Object.assign(styles.addButton, {
-  className: 'add-button',
-});
-
-Object.assign(styles.ctaButton, {
-  className: 'cta-button',
-});
-
-Object.assign(styles.itemWrapper, {
-  className: 'item-wrapper',
-});
 
 export default Wardrobe;
