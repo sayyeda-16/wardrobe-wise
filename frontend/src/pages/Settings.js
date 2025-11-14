@@ -1,7 +1,7 @@
 // src/pages/Settings.js
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FaUserEdit, FaEnvelope, FaLock, FaLeaf, FaBell, FaSignOutAlt, FaTimesCircle } from 'react-icons/fa';
+import { FaUserEdit, FaCog, FaEnvelope, FaLock, FaLeaf, FaBell, FaSignOutAlt, FaTimesCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
 function Settings() {
