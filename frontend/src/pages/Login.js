@@ -1,5 +1,6 @@
+// src/pages/Login.js (UPDATED CODE)
 import React, { useState } from 'react';
-import { FaLeaf, FaEnvelope, FaLock, FaUser, FaSeedling, FaRecycle, FaTree } from 'react-icons/fa';
+import { FaLeaf, FaEnvelope, FaLock, FaUser, FaSeedling, FaRecycle, FaTree, FaSpinner } from 'react-icons/fa';
 
 function Login({ onLogin, onSwitchToRegister }) {
   const [email, setEmail] = useState('');
@@ -13,8 +14,10 @@ function Login({ onLogin, onSwitchToRegister }) {
     setError('');
 
     try {
-      await onLogin(email, password);
+      // NOTE: This assumes 'onLogin' is passed from the parent and handles API calls
+      await onLogin(email, password); 
     } catch (error) {
+      // Catch specific errors from onLogin if available, otherwise use generic message
       setError('Login failed. Please check your credentials and try again.');
     } finally {
       setLoading(false);
@@ -22,111 +25,119 @@ function Login({ onLogin, onSwitchToRegister }) {
   };
 
   return (
-    <div style={styles.container}>
-      {/* Background with nature pattern */}
-      <div style={styles.background}></div>
+    <div className="min-h-screen flex items-center justify-center p-5 bg-gradient-to-br from-green-700 via-green-800 to-green-900 relative overflow-hidden">
       
-      {/* Main Content */}
-      <div style={styles.content}>
+      {/* Background radial gradients for texture */}
+      <div className="absolute inset-0 bg-repeat opacity-5" style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='10' fill='%23ffffff' opacity='0.05'/%3E%3C/svg%3E")` 
+      }}></div>
+
+      {/* Main Content Card */}
+      <div className="flex w-full max-w-6xl bg-white bg-opacity-95 rounded-3xl shadow-2xl overflow-hidden min-h-[600px] relative z-10">
+        
         {/* Left Side - Features */}
-        <div style={styles.features}>
-          <div style={styles.brand}>
-            <div style={styles.logo}>
-              <FaLeaf style={styles.logoIcon} />
-              <span style={styles.logoText}>WardrobeWise</span>
+        <div className="hidden lg:flex flex-col flex-1 p-16 bg-gradient-to-br from-green-800 to-green-900 text-white justify-between">
+          <div className="mb-16">
+            <div className="flex items-center mb-3">
+              <FaLeaf className="text-4xl mr-3 text-green-300" />
+              <span className="text-3xl font-bold tracking-tight">WardrobeWise</span>
             </div>
-            <p style={styles.tagline}>Sustainable Fashion Marketplace</p>
+            <p className="text-lg text-green-200 italic">Sustainable Fashion Marketplace</p>
           </div>
 
-          <div style={styles.featureList}>
-            <div style={styles.featureItem}>
-              <FaRecycle style={styles.featureIcon} />
+          <div className="space-y-8">
+            <div className="flex items-start">
+              <FaRecycle className="text-2xl mr-4 mt-1 text-green-300 flex-shrink-0" />
               <div>
-                <h3 style={styles.featureTitle}>Circular Fashion</h3>
-                <p style={styles.featureText}>Give clothes a second life through sustainable trading</p>
+                <h3 className="text-xl font-semibold mb-1">Circular Fashion</h3>
+                <p className="text-green-100 text-sm">Give clothes a second life through sustainable trading.</p>
               </div>
             </div>
 
-            <div style={styles.featureItem}>
-              <FaSeedling style={styles.featureIcon} />
+            <div className="flex items-start">
+              <FaSeedling className="text-2xl mr-4 mt-1 text-green-300 flex-shrink-0" />
               <div>
-                <h3 style={styles.featureTitle}>Eco-Friendly</h3>
-                <p style={styles.featureText}>Reduce fashion waste and environmental impact</p>
+                <h3 className="text-xl font-semibold mb-1">Eco-Friendly</h3>
+                <p className="text-green-100 text-sm">Reduce fashion waste and environmental impact.</p>
               </div>
             </div>
 
-            <div style={styles.featureItem}>
-              <FaTree style={styles.featureIcon} />
+            <div className="flex items-start">
+              <FaTree className="text-2xl mr-4 mt-1 text-green-300 flex-shrink-0" />
               <div>
-                <h3 style={styles.featureTitle}>Sustainable Community</h3>
-                <p style={styles.featureText}>Join like-minded individuals promoting green fashion</p>
+                <h3 className="text-xl font-semibold mb-1">Sustainable Community</h3>
+                <p className="text-green-100 text-sm">Join like-minded individuals promoting green fashion.</p>
               </div>
             </div>
           </div>
         </div>
 
         {/* Right Side - Login Form */}
-        <div style={styles.formSection}>
-          <div style={styles.card}>
-            <div style={styles.cardHeader}>
-              <h1 style={styles.title}>Welcome Back</h1>
-              <p style={styles.subtitle}>Sign in to your sustainable fashion account</p>
+        <div className="flex flex-1 p-16 items-center justify-center">
+          <div className="w-full max-w-sm">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-extrabold text-gray-900 mb-2 tracking-tight">Welcome Back</h1>
+              <p className="text-lg text-green-600">Sign in to your sustainable fashion account</p>
             </div>
 
             {error && (
-              <div style={styles.error}>
-                <span style={styles.errorIcon}>⚠</span>
+              <div className="flex items-center p-4 bg-red-100 text-red-700 rounded-xl mb-6 text-sm border border-red-300">
+                <span className="mr-2 text-lg">⚠</span>
                 {error}
               </div>
             )}
 
-            <form onSubmit={handleSubmit} style={styles.form}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>
-                  <FaEnvelope style={styles.labelIcon} />
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email Input */}
+              <div>
+                <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+                  <FaEnvelope className="mr-2 text-green-600" />
                   Email Address
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  style={styles.input}
+                  className="w-full p-4 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
                   placeholder="Enter your email"
                   required
                   disabled={loading}
                 />
               </div>
 
-              <div style={styles.inputGroup}>
-                <div style={styles.labelContainer}>
-                  <label style={styles.label}>
-                    <FaLock style={styles.labelIcon} />
+              {/* Password Input */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="flex items-center text-sm font-semibold text-gray-700">
+                    <FaLock className="mr-2 text-green-600" />
                     Password
                   </label>
-                  <a href="#forgot" style={styles.forgotLink}>Forgot password?</a>
+                  <a href="#forgot" className="text-sm text-green-600 font-medium hover:text-green-800 transition duration-150">Forgot password?</a>
                 </div>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  style={styles.input}
+                  className="w-full p-4 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
                   placeholder="Enter your password"
                   required
                   disabled={loading}
                 />
               </div>
 
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
-                style={{
-                  ...styles.submitButton,
-                  ...(loading ? styles.submitButtonLoading : {})
-                }}
+                className={`w-full p-4 rounded-xl text-white font-bold text-lg transition duration-300 shadow-md ${
+                  loading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-green-700 hover:bg-green-800 transform hover:-translate-y-0.5'
+                } flex items-center justify-center`}
               >
                 {loading ? (
                   <>
-                    <div style={styles.spinner}></div>
+                    <FaSpinner className="animate-spin mr-2" />
                     Signing In...
                   </>
                 ) : (
@@ -135,17 +146,26 @@ function Login({ onLogin, onSwitchToRegister }) {
               </button>
             </form>
 
-            <div style={styles.divider}>
-              <span style={styles.dividerText}>New to sustainable fashion?</span>
+            {/* Divider */}
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                <div className="w-full border-t border-gray-300"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-3 bg-white text-gray-500">
+                  New to sustainable fashion?
+                </span>
+              </div>
             </div>
 
+            {/* Register Button */}
             <button
               type="button"
               onClick={onSwitchToRegister}
               disabled={loading}
-              style={styles.registerButton}
+              className="w-full p-4 bg-transparent text-green-700 border-2 border-green-700 rounded-xl font-bold text-lg transition duration-300 hover:bg-green-700 hover:text-white flex items-center justify-center transform hover:-translate-y-0.5"
             >
-              <FaUser style={styles.registerIcon} />
+              <FaUser className="mr-2 text-sm" />
               Create Sustainable Account
             </button>
 
@@ -155,310 +175,5 @@ function Login({ onLogin, onSwitchToRegister }) {
     </div>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: '100vh',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px',
-    fontFamily: '"Poppins", "Segoe UI", sans-serif',
-    background: 'linear-gradient(135deg, #87a96b 0%, #6b8e23 50%, #556b2f 100%)',
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  background: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    background: `
-      radial-gradient(circle at 20% 80%, rgba(135, 169, 107, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(107, 142, 35, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, rgba(85, 107, 47, 0.2) 0%, transparent 50%)
-    `,
-    zIndex: 0,
-  },
-  content: {
-    display: 'flex',
-    width: '100%',
-    maxWidth: '1200px',
-    background: 'rgba(255, 255, 255, 0.95)',
-    borderRadius: '24px',
-    boxShadow: '0 20px 60px rgba(34, 51, 17, 0.2)',
-    overflow: 'hidden',
-    minHeight: '600px',
-    zIndex: 1,
-    position: 'relative',
-  },
-  features: {
-    flex: 1,
-    padding: '60px 40px',
-    background: 'linear-gradient(135deg, #556b2f 0%, #6b8e23 100%)',
-    color: 'white',
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between',
-  },
-  brand: {
-    marginBottom: '60px',
-  },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    marginBottom: '12px',
-  },
-  logoIcon: {
-    fontSize: '32px',
-    marginRight: '12px',
-    color: '#d4e6a4',
-  },
-  logoText: {
-    fontSize: '28px',
-    fontWeight: '700',
-    color: 'white',
-    letterSpacing: '-0.5px',
-  },
-  tagline: {
-    fontSize: '16px',
-    color: '#d4e6a4',
-    margin: 0,
-    fontStyle: 'italic',
-  },
-  featureList: {
-    spaceBetween: '20px',
-  },
-  featureItem: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    marginBottom: '32px',
-  },
-  featureIcon: {
-    fontSize: '24px',
-    marginRight: '16px',
-    marginTop: '4px',
-    color: '#d4e6a4',
-    flexShrink: 0,
-  },
-  featureTitle: {
-    fontSize: '18px',
-    fontWeight: '600',
-    margin: '0 0 8px 0',
-    color: 'white',
-  },
-  featureText: {
-    fontSize: '14px',
-    color: '#e8f4d3',
-    margin: 0,
-    lineHeight: '1.5',
-  },
-  formSection: {
-    flex: 1,
-    padding: '60px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  card: {
-    width: '100%',
-    maxWidth: '400px',
-  },
-  cardHeader: {
-    textAlign: 'center',
-    marginBottom: '32px',
-  },
-  title: {
-    fontSize: '32px',
-    fontWeight: '700',
-    color: '#2d4a17',
-    margin: '0 0 8px 0',
-    letterSpacing: '-0.5px',
-  },
-  subtitle: {
-    fontSize: '16px',
-    color: '#6b8e23',
-    margin: 0,
-  },
-  error: {
-    display: 'flex',
-    alignItems: 'center',
-    padding: '16px',
-    backgroundColor: '#fee2e2',
-    color: '#dc2626',
-    borderRadius: '12px',
-    marginBottom: '24px',
-    fontSize: '14px',
-    border: '1px solid #fecaca',
-  },
-  errorIcon: {
-    marginRight: '8px',
-    fontSize: '16px',
-  },
-  form: {
-    marginBottom: '24px',
-  },
-  inputGroup: {
-    marginBottom: '24px',
-  },
-  labelContainer: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '8px',
-  },
-  label: {
-    display: 'flex',
-    alignItems: 'center',
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: '8px',
-  },
-  labelIcon: {
-    marginRight: '8px',
-    color: '#6b8e23',
-    fontSize: '14px',
-  },
-  forgotLink: {
-    fontSize: '14px',
-    color: '#6b8e23',
-    textDecoration: 'none',
-    fontWeight: '500',
-  },
-  input: {
-    width: '100%',
-    padding: '16px',
-    border: '2px solid #d1d5db',
-    borderRadius: '12px',
-    fontSize: '16px',
-    transition: 'all 0.3s ease',
-    outline: 'none',
-    boxSizing: 'border-box',
-    fontFamily: 'inherit',
-  },
-  submitButton: {
-    width: '100%',
-    padding: '16px',
-    backgroundColor: '#6b8e23',
-    color: 'white',
-    border: 'none',
-    borderRadius: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'inherit',
-    letterSpacing: '0.5px',
-  },
-  submitButtonLoading: {
-    backgroundColor: '#9ca3af',
-    cursor: 'not-allowed',
-  },
-  spinner: {
-    width: '18px',
-    height: '18px',
-    border: '2px solid transparent',
-    borderTop: '2px solid white',
-    borderRadius: '50%',
-    animation: 'spin 1s linear infinite',
-    marginRight: '8px',
-  },
-  divider: {
-    position: 'relative',
-    textAlign: 'center',
-    margin: '32px 0',
-  },
-  dividerText: {
-    display: 'inline-block',
-    padding: '0 16px',
-    backgroundColor: 'white',
-    color: '#6b7280',
-    fontSize: '14px',
-    position: 'relative',
-    zIndex: 1,
-  },
-  registerButton: {
-    width: '100%',
-    padding: '16px',
-    backgroundColor: 'transparent',
-    color: '#6b8e23',
-    border: '2px solid #6b8e23',
-    borderRadius: '12px',
-    fontSize: '16px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.3s ease',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'inherit',
-  },
-  registerIcon: {
-    marginRight: '8px',
-    fontSize: '14px',
-  },
-  
-};
-
-// Add CSS animations
-const styleSheet = document.createElement('style');
-styleSheet.innerText = `
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
-  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
-
-  /* Input focus effects */
-  input:focus {
-    border-color: #6b8e23 !important;
-    box-shadow: 0 0 0 3px rgba(107, 142, 35, 0.1) !important;
-  }
-
-  input:hover {
-    border-color: #9ca3af !important;
-  }
-
-  /* Button hover effects */
-  button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 20px rgba(34, 51, 17, 0.2);
-  }
-
-  /* Specific button styles */
-  .submit-button:hover:not(:disabled) {
-    background-color: #556b2f !important;
-  }
-
-  .register-button:hover:not(:disabled) {
-    background-color: #6b8e23 !important;
-    color: white !important;
-  }
-
-  .forgot-link:hover {
-    color: #556b2f !important;
-  }
-`;
-
-document.head.appendChild(styleSheet);
-
-// Add hover effects using CSS classes
-Object.assign(styles.submitButton, {
-  className: 'submit-button',
-});
-
-Object.assign(styles.registerButton, {
-  className: 'register-button',
-});
-
-Object.assign(styles.forgotLink, {
-  className: 'forgot-link',
-});
 
 export default Login;
