@@ -205,7 +205,7 @@ function Wardrobe({ onAddItem }) {
           <div style={styles.brandSection}>
             <div style={styles.logo}>
               <FaLeaf style={styles.logoIcon} />
-              <span style={styles.logoText}>EcoWardrobe</span>
+              <span style={styles.logoText}>WardrobeWise</span>
             </div>
             <h1 style={styles.title}>My Sustainable Wardrobe</h1>
             <p style={styles.subtitle}>

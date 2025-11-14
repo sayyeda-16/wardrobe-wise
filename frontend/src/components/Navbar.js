@@ -38,7 +38,7 @@ const Navbar = () => {
         <Link to="/" style={styles.brand}>
           <div style={styles.logoContainer}>
             <FaLeaf style={styles.logoIcon} />
-            <span style={styles.brandText}>EcoWardrobe</span>
+            <span style={styles.brandText}>WardrobeWise</span>
           </div>
           <div style={styles.tagline}>Sustainable Fashion</div>
         </Link>
