@@ -1,7 +1,7 @@
 // src/pages/UserProfile.js
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FaUserCircle, FaEnvelope, FaTag, FaShoppingBag, FaChartLine, FaCog, FaLeaf } from 'react-icons/fa';
+import { FaUserCircle, FaEnvelope, FaTag, FaShoppingBag, FaChartLine, FaCog, FaLeaf, FaRecycle } from 'react-icons/fa'; // <<< FIXED: Added FaRecycle
 import { Link } from 'react-router-dom';
 
 // --- MOCK DATA FOR DEMONSTRATION ---
