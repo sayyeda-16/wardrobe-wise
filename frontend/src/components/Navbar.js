@@ -166,7 +166,6 @@ const styles = {
     borderBottom: '2px solid rgba(162, 186, 113, 0.3)',
     position: 'relative',
     overflow: 'hidden',
-    fontFamily: '"Poppins", "Segoe UI", sans-serif',
   },
   background: {
     position: 'absolute',
