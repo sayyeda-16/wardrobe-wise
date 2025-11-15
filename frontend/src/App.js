@@ -58,6 +58,11 @@ function AppContent() {
     }
   ]);
 
+  const navToRegister = () => navigate('/register');
+	const navToLogin = () => navigate('/login');
+	const navToAddItem = () => navigate('/add-item');
+	const navToWardrobe = () => navigate('/wardrobe');
+
   const handleAddItem = (newItem) => {
     const itemWithId = { 
       ...newItem, 
@@ -88,10 +93,10 @@ function AppContent() {
     return (
       <Routes>
         <Route path="/login" element={
-          <Login onLogin={handleLogin} onSwitchToRegister={() => <Navigate to="/register" />} />
+          <Login onLogin={handleLogin} />
         } />
         <Route path="/register" element={
-          <Register onRegister={handleRegister} onSwitchToLogin={() => <Navigate to="/login" />} />
+          <Register onRegister={handleRegister} onSwitchToLogin={navToLogin} />
         } />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>

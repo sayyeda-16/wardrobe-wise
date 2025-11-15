@@ -4,7 +4,7 @@ import { loginUser } from '../api/auth';
 import { FaLeaf, FaEnvelope, FaLock, FaUser, FaSeedling, FaRecycle, FaTree } from 'react-icons/fa';
 import { useAuth } from "../contexts/AuthContext";
 
-function Login({ onLogin, onSwitchToRegister }) {
+function Login({ onLogin }) {
   const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -158,7 +158,7 @@ function Login({ onLogin, onSwitchToRegister }) {
 
             <button
               type="button"
-              onClick={onSwitchToRegister}
+              onClick={() => navigate("/register")}
               disabled={loading}
               style={styles.registerButton}
             >
