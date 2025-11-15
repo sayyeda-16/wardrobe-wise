@@ -1,9 +1,18 @@
+// src/components/Navbar.js
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext'; 
-import { 
-  FaLeaf, FaTshirt, FaStore, FaPlus, FaUser, FaSignOutAlt, FaSeedling, 
-  FaCog, FaChartBar, FaUserCircle 
+import { useAuth } from '../contexts/AuthContext';
+import {
+  FaLeaf,
+  FaTshirt,
+  FaStore,
+  FaPlus,
+  FaUser,
+  FaSignOutAlt,
+  FaSeedling,
+  FaCog,
+  FaChartBar,
+  FaUserCircle,
 } from 'react-icons/fa';
 
 const Navbar = () => {
@@ -11,12 +20,13 @@ const Navbar = () => {
   const location = useLocation();
 
   const navItems = [
-    { path: '/stats', label: 'Stats', icon: FaChartBar }, 
-    { path: '/wardrobe', label: 'My Wardrobe', icon: FaTshirt }, 
+    // MODIFIED: Renaming 'Stats' to 'Analytics' for clarity, keeping the path /stats
+    { path: '/stats', label: 'Usage Analytics', icon: FaChartBar },
+    { path: '/wardrobe', label: 'My Wardrobe', icon: FaTshirt },
     { path: '/add-item', label: 'Add Item', icon: FaPlus },
     { path: '/marketplace', label: 'Marketplace', icon: FaStore },
   ];
-  
+
   const userLinks = [
     { path: '/profile', label: 'Profile', icon: FaUserCircle },
     { path: '/settings', label: 'Settings', icon: FaCog },
@@ -26,7 +36,7 @@ const Navbar = () => {
     <nav style={styles.navbar}>
       {/* Background Image */}
       <div style={styles.background}></div>
-      
+
       <div style={styles.container}>
         {/* Logo/Brand */}
         <Link to="/" style={styles.brand}>
@@ -37,7 +47,7 @@ const Navbar = () => {
           <div style={styles.tagline}>Sustainable Fashion</div>
         </Link>
 
-        {/* Navigation Items - Removed container background */}
+        {/* Navigation Items */}
         {user && (
           <div style={styles.navItems}>
             {navItems.map((item) => {
@@ -49,7 +59,7 @@ const Navbar = () => {
                   to={item.path}
                   style={{
                     ...styles.navLink,
-                    ...(isActive ? styles.navLinkActive : {})
+                    ...(isActive ? styles.navLinkActive : {}),
                   }}
                   className="eco-nav-link"
                 >
@@ -119,33 +129,33 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Inline styles */}
+      {/* Inline styles for hover effects (CSS) */}
       <style>{`
         .eco-nav-link {
           transition: all 0.3s ease !important;
         }
-        
+
         .eco-nav-link:hover {
           background-color: rgba(162, 186, 113, 0.2) !important;
           color: white !important;
           border: 1px solid rgba(162, 186, 113, 0.4) !important;
           transform: translateY(-1px) !important;
         }
-        
+
         .eco-logout-btn:hover {
           background-color: #a2ba71 !important;
           color: #2d4a17 !important;
           transform: translateY(-2px) !important;
           box-shadow: 0 6px 20px rgba(162, 186, 113, 0.4) !important;
         }
-        
+
         .eco-login-btn:hover {
           color: white !important;
           background-color: rgba(162, 186, 113, 0.2) !important;
           border: 1px solid rgba(162, 186, 113, 0.4) !important;
           transform: translateY(-1px) !important;
         }
-        
+
         .eco-register-btn:hover {
           background-color: #a2ba71 !important;
           color: #2d4a17 !important;
@@ -158,6 +168,7 @@ const Navbar = () => {
   );
 };
 
+// --- Styles ---
 const styles = {
   navbar: {
     background: 'linear-gradient(135deg, #6f8260 0%, #5a6f4c 100%)',
@@ -173,7 +184,8 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundImage: 'linear-gradient(rgba(111, 130, 96, 0.7), rgba(111, 130, 96, 0.7)), url("https://etymologie.ca/cdn/shop/files/Etymologie-Sustainability-A-Journey.png?v=1698966090&width=2100")',
+    backgroundImage:
+      'linear-gradient(rgba(111, 130, 96, 0.7), rgba(111, 130, 96, 0.7)), url("https://etymologie.ca/cdn/shop/files/Etymologie-Sustainability-A-Journey.png?v=1698966090&width=2100")',
     backgroundSize: 'cover',
     backgroundPosition: 'center 30%',
     zIndex: 0,
@@ -191,10 +203,11 @@ const styles = {
   },
   brand: {
     display: 'flex',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     textDecoration: 'none',
     color: 'white',
-    gap: '15px',
+    gap: '0',
     transition: 'transform 0.3s ease',
   },
   logoContainer: {
@@ -296,6 +309,7 @@ const styles = {
     transition: 'all 0.3s ease',
     backdropFilter: 'blur(10px)',
     fontFamily: 'inherit',
+    borderRadius: '4px', // Added for better button appearance
   },
   logoutIcon: {
     fontSize: '14px',
@@ -314,6 +328,7 @@ const styles = {
     fontWeight: '600',
     transition: 'all 0.3s ease',
     border: '1px solid transparent',
+    borderRadius: '4px', // Added for better link appearance
   },
   registerButton: {
     display: 'flex',
@@ -328,6 +343,7 @@ const styles = {
     transition: 'all 0.3s ease',
     boxShadow: '0 4px 15px rgba(162, 186, 113, 0.3)',
     border: '2px solid transparent',
+    borderRadius: '4px', // Added for better link appearance
   },
   registerIcon: {
     fontSize: '14px',
@@ -345,6 +361,7 @@ const styles = {
     textDecoration: 'none',
     transition: 'all 0.3s ease',
     opacity: 0.8,
+    borderRadius: '50%', // Assuming these are circular icon links
   },
 };
 
