@@ -12,6 +12,12 @@ import Marketplace from './pages/Marketplace';
 import AddItem from './pages/AddItem';
 import Navbar from './components/Navbar';
 import ItemDetail from './pages/ItemDetail'; 
+// In your main router file (e.g., App.js, Router.js)
+
+import AnalyticsPage from './pages/AnalyticsPage'; 
+// ... other imports
+
+
 
 // --- Day 2 Transaction System Imports (Dev 2) ---
 import Checkout from './pages/Checkout';
@@ -139,7 +145,7 @@ function AppContent() {
 					{/* Day 2/4 Feature Routes (Dev 1) */}
 					<Route path="/profile" element={<UserProfile />} /> 	
 					<Route path="/settings" element={<Settings />} /> 	 	
-					<Route path="/stats" element={<WardrobeStats />} /> 	
+					<Route path="/stats" element={<AnalyticsPage />} /> 	
 					
 					{/* Default Routes: Redirect base path or unknown path to wardrobe */}
 					<Route path="/" element={<Navigate to="/wardrobe" />} />
