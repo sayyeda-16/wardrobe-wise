@@ -1,7 +1,7 @@
 // src/pages/ItemDetail.js (UPDATED CODE)
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from 'axios';
 import { useAuth } from '../contexts/AuthContext';
 import { FaShoppingCart, FaSpinner, FaTimesCircle, FaCheckCircle } from 'react-icons/fa';
 
@@ -30,14 +30,14 @@ const ItemDetail = () => {
     setLoading(true);
     try {
       // 1. Fetch the Item Details
-      const itemRes = await axios.get(`/api/items/${id}/`);
+      const itemRes = await api.get(`/api/items/${id}/`);
       setItem(itemRes.data);
       
       // 2. EFFICIENTLY Fetch the Listing (assuming an API endpoint exists)
       // IMPROVEMENT: Instead of fetching ALL listings, fetch just the relevant one.
       try {
         // A more efficient API call is preferred here:
-        const listingRes = await axios.get(`/api/listings/?item_id=${id}&status=Active`); 
+        const listingRes = await api.get(`/api/listings/?item_id=${id}&status=Active`); 
         // Assuming the endpoint returns an array, take the first result
         setListing(listingRes.data[0] || null); 
       } catch (listingError) {
@@ -60,7 +60,7 @@ const ItemDetail = () => {
 
     try {
       // Use Item ID or Listing ID for purchase endpoint
-      await axios.post(`/api/listings/${listing.listing_id}/buy/`);
+      await api.post(`/api/listings/${listing.listing_id}/buy/`);
       
       setStatusMessage({ type: 'success', message: 'Purchase successful! Item is now in your wardrobe.' });
       

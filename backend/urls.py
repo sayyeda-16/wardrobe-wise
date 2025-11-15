@@ -21,6 +21,7 @@ from app_user.views import RegisterView
 from app_user.views import CustomTokenObtainPairView
 from app_user.views import LogoutView
 from app_user.views import UserProfileView
+from app_user.views import UserProfileStats, UserOrders, UserListings
 
 
 urlpatterns = [
@@ -30,5 +31,8 @@ urlpatterns = [
     path('api/token/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/user/', UserProfileView.as_view(), name='user'),
+    path('api/profile/stats/', UserProfileStats.as_view(), name='profile-stats'),
+    path('api/profile/orders/', UserOrders.as_view(), name='profile-orders'),
+    path('api/profile/listings/', UserListings.as_view(), name='profile-listings'),
 
 ]

@@ -2,7 +2,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
-from .models import User, AppUser
+from .models import AppUser, Item, Purchase, Listing, Sale
 
 User = get_user_model()
 
@@ -42,7 +42,29 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 class AppUserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source='user.email', read_only=True)
+    date_joined = serializers.DateTimeField(source='user.date_joined', read_only=True)
 
     class Meta:
         model = AppUser
-        fields = ['full_name', 'email', 'city']
+        fields = ['full_name', 'email', 'city', 'date_joined']
+
+class UserStatsSerializer(serializers.Serializer):
+    total_items = serializers.IntegerField()
+    items_resold = serializers.IntegerField()
+    avg_cpw = serializers.FloatField()
+
+class OrderSerializer(serializers.ModelSerializer):
+    item_name = serializers.CharField(source='listing.item.item_name', read_only=True)
+    listing_id = serializers.IntegerField(source='listing.listing_id', read_only=True)
+
+    class Meta:
+        model = Sale
+        fields = ['listing_id', 'item_name', 'sale_price_cents', 'sold_on']
+
+
+class ListingSerializer(serializers.ModelSerializer):
+    item_name = serializers.CharField(source='item.item_name', read_only=True)
+
+    class Meta:
+        model = Listing
+        fields = ['listing_id', 'item_name', 'list_price_cents', 'status']

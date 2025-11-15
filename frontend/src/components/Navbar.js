@@ -84,9 +84,9 @@ const Navbar = () => {
               <div style={styles.userInfo}>
                 <div style={styles.userWelcome}>
                   <FaSeedling style={styles.ecoIcon} />
-                  <span style={styles.welcomeText}>Welcome back,</span>
+                  <span style={styles.welcomeText}>Welcome,</span>
                 </div>
-                <div style={styles.userName}>{user.username}</div>
+                <div style={styles.userName}>{user.full_name}</div>
               </div>
               <button
                 onClick={logout}

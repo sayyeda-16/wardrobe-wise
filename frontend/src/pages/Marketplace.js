@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ItemCard from '../components/ItemCard'; 
 import SearchFilters from '../components/SearchFilters';
 import Sorting from '../components/Sorting';
-import axios from 'axios';
+import api from 'axios';
 import { FaSpinner, FaFilter } from 'react-icons/fa';
 
 // Helper to convert condition string to a rank for sorting (1 is best condition)
@@ -41,7 +41,7 @@ function Marketplace() {
         setError('');
         try {
             // NOTE: In a real app, API query parameters would handle filtering on the backend
-            const response = await axios.get('/api/listings/active/');
+            const response = await api.get('/api/listings/active/');
             setListings(response.data);
             setLoading(false);
         } catch (err) {

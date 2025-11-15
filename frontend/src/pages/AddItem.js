@@ -1,7 +1,7 @@
 // src/pages/AddItem.js (UPDATED CODE)
 import React, { useState } from 'react';
 import { FaTshirt, FaTag, FaCheckCircle, FaSpinner, FaTimesCircle, FaCamera } from 'react-icons/fa';
-import axios from 'axios';
+import api from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -62,7 +62,7 @@ function AddItem() {
     try {
       // API call to add the item (and optionally list it if price is included)
       // Assuming the API endpoint handles both item creation and optional listing setup
-      await axios.post('/api/items/add/', submissionData, {
+      await api.post('/api/items/add/', submissionData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
