@@ -1,11 +1,11 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect } from "react";
 
 const AuthContext = createContext();
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -14,125 +14,100 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check for existing token on app start
+  // check for existing login on app start
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
+    const token = localStorage.getItem("token");
+    const userData = localStorage.getItem("user");
     if (token && userData) {
       setUser(JSON.parse(userData));
     }
     setLoading(false);
   }, []);
 
+  // login function
   const login = async (email, password) => {
     try {
-      // Replace with your actual Django backend URL
-      const response = await fetch('http://localhost:8000/api/token/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("http://127.0.0.1:8000/api/token/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
 
       if (!response.ok) {
-        throw new Error('Login failed');
+        const errorData = await response.json();
+        console.error("Login failed:", errorData);
+        return { success: false, message: errorData.detail || "Login failed" };
       }
 
       const data = await response.json();
-      
-      // Store token and user data
-      localStorage.setItem('token', data.access);
-      localStorage.setItem('refresh_token', data.refresh);
-      
-      // Fetch user profile
-      const userResponse = await fetch('http://localhost:8000/api/user/', {
+      localStorage.setItem("token", data.access);
+      localStorage.setItem("refresh_token", data.refresh);
+
+      // fetch user profile
+      const profileRes = await fetch("http://127.0.0.1:8000/api/user/", {
         headers: {
-          'Authorization': `Bearer ${data.access}`,
+          Authorization: `Bearer ${data.access}`,
         },
       });
 
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        setUser(userData);
-        localStorage.setItem('user', JSON.stringify(userData));
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        setUser(profileData);
+        localStorage.setItem("user", JSON.stringify(profileData));
       }
 
       return { success: true };
     } catch (error) {
-      console.error('Login error:', error);
-      // Fallback to mock data if backend is not available
-      const mockUser = {
-        id: 1,
-        username: email.split('@')[0] || 'user',
-        email: email
-      };
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      localStorage.setItem('token', 'mock-token');
-      return { success: true };
+      console.error("Login error:", error);
+      return { success: false, message: "Server error" };
     }
   };
 
+  // register function (auto-login after)
   const register = async (userData) => {
     try {
-      const response = await fetch('http://localhost:8000/api/register/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      const response = await fetch("http://127.0.0.1:8000/api/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userData),
       });
 
       if (!response.ok) {
-        throw new Error('Registration failed');
+        const errorData = await response.json();
+        console.error("Registration failed:", errorData);
+        return { success: false, message: errorData.detail || "Registration failed" };
       }
 
-      // Auto-login after registration
+      // automatically log in after registration
       return await login(userData.email, userData.password);
     } catch (error) {
-      console.error('Registration error:', error);
-      // Fallback to mock registration
-      const mockUser = {
-        id: Date.now(),
-        username: userData.username,
-        email: userData.email
-      };
-      setUser(mockUser);
-      localStorage.setItem('user', JSON.stringify(mockUser));
-      localStorage.setItem('token', 'mock-token');
-      return { success: true };
+      console.error("Registration error:", error);
+      return { success: false, message: "Server error" };
     }
   };
 
+  // logout function
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
   };
 
+  // helper for authenticated requests
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem("token");
     return {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
     };
   };
 
-  const value = {
-    user,
-    login,
-    register,
-    logout,
-    loading,
-    getAuthHeaders,
-  };
+  const value = { user, login, register, logout, loading, getAuthHeaders };
 
   return (
     <AuthContext.Provider value={value}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 };

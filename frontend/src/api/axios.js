@@ -1,10 +1,12 @@
 import axios from 'axios';
 
-// Set base URL for your Django backend
-axios.defaults.baseURL = 'http://localhost:8000';
+// Create an isolated axios instance that ALWAYS uses Django's URL
+const api = axios.create({
+  baseURL: "http://localhost:8000",
+});
 
-// Add a request interceptor to include the auth token
-axios.interceptors.request.use(
+// --- REQUEST INTERCEPTOR ---
+api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('access_token');
     if (token) {
@@ -12,35 +14,35 @@ axios.interceptors.request.use(
     }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Add a response interceptor to handle token refresh
-axios.interceptors.response.use(
+// --- RESPONSE INTERCEPTOR (Handles token refresh) ---
+api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
-      
+
       const refreshToken = localStorage.getItem('refresh_token');
+
       if (refreshToken) {
         try {
-          const response = await axios.post('/api/token/refresh/', {
+          const response = await api.post('/api/token/refresh/', {
             refresh: refreshToken
           });
-          
+
           const { access } = response.data;
+
           localStorage.setItem('access_token', access);
-          axios.defaults.headers.common['Authorization'] = `Bearer ${access}`;
+
+          api.defaults.headers.common['Authorization'] = `Bearer ${access}`;
           originalRequest.headers['Authorization'] = `Bearer ${access}`;
-          
-          return axios(originalRequest);
+
+          return api(originalRequest);
         } catch (refreshError) {
-          // Refresh token failed, redirect to login
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
           window.location.href = '/login';
@@ -48,9 +50,10 @@ axios.interceptors.response.use(
         }
       }
     }
-    
+
     return Promise.reject(error);
   }
 );
 
-export default axios;
+// EXPORT THE *API INSTANCE*, NOT axios
+export default api;

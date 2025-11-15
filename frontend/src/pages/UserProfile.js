@@ -1,8 +1,12 @@
 // src/pages/UserProfile.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { FaUserCircle, FaEnvelope, FaTag, FaShoppingBag, FaChartLine, FaCog, FaLeaf, FaRecycle } from 'react-icons/fa'; // <<< FIXED: Added FaRecycle
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
+
+
+const statsRes = await api.get('/api/profile/stats/');
 
 // --- MOCK DATA FOR DEMONSTRATION ---
 const MOCK_USER_STATS = {
@@ -34,6 +38,64 @@ function UserProfile() {
         joined_date: '2024-01-01',
         bio: 'Committed to circular fashion and tracking my CPW.',
     };
+    console.log("PROFILE DATA:", profile);
+
+    
+    const [userStats, setUserStats] = useState(null);
+    const [orders, setOrders] = useState([]);
+    const [listings, setListings] = useState([]);
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                console.log("Fetching stats...");
+                const statsRes = await api.get('/api/profile/stats/');
+                console.log("Stats response:", statsRes.data);
+                setUserStats(statsRes.data);
+
+                console.log("Fetching orders...");
+                const ordersRes = await api.get('/api/profile/orders/');
+                console.log("Orders response:", ordersRes.data);
+                const mappedOrders = ordersRes.data.map(o => ({
+                    id: o.listing_id,
+                    item: o.item_name,
+                    date: o.sold_on,
+                    total: o.sale_price_cents,
+                    status: 'Delivered', // or map real status if available
+                }));
+                console.log("Mapped orders:", mappedOrders);
+                setOrders(mappedOrders);
+
+                console.log("Fetching listings...");
+                const listingsRes = await api.get('/api/profile/listings/');
+                console.log("Listings response:", listingsRes.data);
+                const mappedListings = listingsRes.data.map(l => ({
+                    id: l.listing_id,
+                    item: l.item_name,
+                    price: l.list_price_cents,
+                    status: l.status === 'Active' ? 'Listed' : l.status,
+                }));
+                console.log("Mapped listings:", mappedListings);
+                setListings(mappedListings);
+
+            } catch (error) {
+                if (error.response) {
+                    // Server responded with a status code outside 2xx
+                    console.error("API response error:", error.response.status, error.response.data);
+                } else if (error.request) {
+                    // Request was made but no response received
+                    console.error("No response received:", error.request);
+                } else {
+                    // Something else happened
+                    console.error("Error setting up request:", error.message);
+                }
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
+
 
     // Helper component for stat cards
     const StatCard = ({ icon: Icon, title, value, color }) => (
@@ -58,27 +120,27 @@ function UserProfile() {
                 <StatCard 
                     icon={FaTag} 
                     title="Total Items" 
-                    value={MOCK_USER_STATS.total_items} 
+                    value={userStats?.total_items ?? 0} 
                     color="#4F46E5" 
                 />
                 <StatCard 
                     icon={FaRecycle} 
                     title="Items Resold/Donated" 
-                    value={MOCK_USER_STATS.items_resold} 
+                    value={userStats?.items_resold ?? 0} 
                     color="#10B981" 
                 />
                 <StatCard 
                     icon={FaLeaf} 
-                    title="Avg. Cost/Wear (CPW)" 
-                    value={formatCurrency(MOCK_USER_STATS.avg_csw * 100)} // Displaying CPW as cents converted to currency
+                    title="Avg. Cost/Item (CPI)" 
+                    value={formatCurrency((userStats?.avg_cpw ?? 0) * 100)}  // Displaying CPW as cents converted to currency
                     color="#F59E0B" 
                 />
             </div>
             
             {/* Quick Access to Orders & Listings */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
-                <OrdersList tabTitle="Recent Orders" list={MOCK_ORDERS.slice(0, 3)} />
-                <ListingsList tabTitle="Active Listings" list={MOCK_LISTINGS.filter(l => l.status === 'Listed').slice(0, 3)} />
+                <OrdersList tabTitle="Recent Orders" list={orders} />
+                <ListingsList tabTitle="Active Listings" list={listings.filter(l => l.status === 'Listed')} />
             </div>
         </div>
     );
@@ -141,7 +203,7 @@ function UserProfile() {
                     <div>
                         <h1 className="text-3xl font-extrabold text-gray-900">{profile.username}</h1>
                         <p className="text-lg text-gray-600 flex items-center gap-2 mt-1"><FaEnvelope className="text-sm" /> {profile.email}</p>
-                        <p className="text-sm text-gray-500 mt-2 italic">Joined: {profile.joined_date}</p>
+                        <p className="text-sm text-gray-500 mt-2 italic">Joined: {new Date(profile.date_joined).toLocaleString("en-US", {year: "numeric",month: "long",day: "numeric"})}</p>
                     </div>
                 </div>
             </header>
@@ -191,8 +253,8 @@ function UserProfile() {
             {/* Tab Content */}
             <div className="mt-8">
                 {activeTab === 'dashboard' && <DashboardTab />}
-                {activeTab === 'orders' && <OrdersList tabTitle="All Order History" />}
-                {activeTab === 'listings' && <ListingsList tabTitle="All Sales & Listings" />}
+                {activeTab === 'orders' && <OrdersList tabTitle="All Order History" list={orders} />}
+                {activeTab === 'listings' && <ListingsList tabTitle="All Sales & Listings" list={listings} />}
             </div>
         </div>
     );

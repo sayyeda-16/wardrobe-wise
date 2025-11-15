@@ -1,7 +1,7 @@
 // src/pages/Checkout.js (CLEANED AND FORMATTED CODE)
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import axios from 'axios';
+import api from 'axios';
 import { FaLock, FaSpinner, FaMapMarkerAlt, FaCreditCard, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 
 // --- CONSTANTS ---
@@ -62,7 +62,7 @@ const Checkout = () => {
 
         try {
             // 1. API Call to process order (simulated delay for demonstration)
-            // const response = await axios.post('/api/orders/create/', orderPayload);
+            // const response = await api.post('/api/orders/create/', orderPayload);
             // const orderId = response.data.order_id;
             
             await new Promise(resolve => setTimeout(resolve, 1500)); 

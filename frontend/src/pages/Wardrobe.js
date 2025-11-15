@@ -6,7 +6,7 @@ import { FaLeaf, FaPlus, FaRecycle, FaSeedling, FaFilter, FaSpinner, FaTshirt } 
 import ItemCard from '../components/ItemCard';
 import ItemFilters from '../components/ItemFilters';
 import ItemDetails from '../components/ItemDetails';
-import axios from 'axios';
+import api from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 // --- Theme & Data Constants ---
@@ -66,7 +66,7 @@ function Wardrobe() {
     setLoading(true);
     setError('');
     try {
-      const response = await axios.get('/api/items/wardrobe/'); 
+      const response = await api.get('/api/items/wardrobe/'); 
       setItems(response.data);
     } catch (apiError) {
       console.error('Error fetching items from API. Using mock data:', apiError.message);
@@ -159,7 +159,7 @@ function Wardrobe() {
     if (!price || isNaN(price) || parseFloat(price) <= 0) return;
 
     try {
-      await axios.post('/api/listings/', {
+      await api.post('/api/listings/', {
         item_id: item.item_id,
         price_cents: Math.round(parseFloat(price) * 100)
       });
@@ -184,7 +184,7 @@ function Wardrobe() {
     if (!window.confirm(`Consider re-purposing ${item.item_name || item.name} instead of deleting?`)) return;
 
     try {
-      await axios.delete(`/api/items/${item.item_id}/`);
+      await api.delete(`/api/items/${item.item_id}/`);
       alert('Item removed sustainably');
       fetchItems();
       handleCloseDetails();

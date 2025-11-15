@@ -1,30 +1,52 @@
 // src/pages/Register.js (UPDATED CODE)
-import React, { useState } from 'react';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { registerUser } from "../api/auth";
 import { FaUser, FaEnvelope, FaLock, FaCheckCircle, FaSpinner, FaTimesCircle } from 'react-icons/fa';
 
 function Register({ onRegister, onSwitchToLogin }) {
   const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: ''
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+    full_name: "",
+    city: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
 
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  // const [success, setSuccess] = useState(''); // see if this should be deleted
+
+  const formatErrors = (errors) => {
+  if (!errors || typeof errors !== "object") return "Registration failed.";
+
+  let messages = [];
+
+  for (let field in errors) {
+    const fieldErrors = errors[field];
+    if (Array.isArray(fieldErrors)) {
+      fieldErrors.forEach(msg => {
+        messages.push(`${field.charAt(0).toUpperCase() + field.slice(1)}: ${msg}`);
+      });
+    }
+  }
+
+  return messages.join("\n");
+};
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError(''); 
+    //setSuccess(''); // see whether to delete
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match. Please verify them.");
@@ -33,25 +55,24 @@ function Register({ onRegister, onSwitchToLogin }) {
 
     setLoading(true);
 
-    try {
-      // NOTE: Assuming onRegister handles the API call and throws on failure
-      // We pass only the required fields (excluding confirmPassword)
-      await onRegister({
-        username: formData.username,
-        email: formData.email,
-        password: formData.password
-      });
+    const result = await registerUser({
+      username: formData.username,
+      email: formData.email,
+      password: formData.password,
+      password2: formData.confirmPassword,
+      full_name: formData.full_name,
+      city: formData.city,
+    });
+    console.log("Registration result:", result);
 
-      setSuccess('Account successfully created! Redirecting to login...');
-      // Optionally redirect after a delay
-      setTimeout(onSwitchToLogin, 2000); 
-
-    } catch (apiError) {
-      console.error("Registration failed:", apiError);
-      setError('Registration failed. Username or email may already be in use.');
-    } finally {
-      setLoading(false);
+    if (result.id || result.email) {
+      alert(`Account created for ${formData.username}!`);
+      navigate("/login");
+    } else {
+      setError(formatErrors(result));
     }
+
+    setLoading(false);
   };
 
   return (
@@ -74,30 +95,29 @@ function Register({ onRegister, onSwitchToLogin }) {
                 {error}
             </div>
         )}
-        {success && (
+        {/*success && (
             <div className="flex items-center p-4 bg-green-100 text-green-700 rounded-xl mb-6 text-sm border border-green-300">
                 <FaCheckCircle className="mr-2 flex-shrink-0" />
                 {success}
             </div>
-        )}
+        ) */}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           
-          {/* Username Input */}
+          {/* Full Name Input */}
           <div>
             <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
               <FaUser className="mr-2 text-green-600 text-sm" />
-              Username *
+              Full Name *
             </label>
             <input
               type="text"
-              name="username"
-              value={formData.username}
+              name="full_name"
+              value={formData.full_name}
               onChange={handleChange}
               required
-              disabled={loading}
               className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
-              placeholder="Choose a username"
+              placeholder="Enter your name"
             />
           </div>
 
@@ -116,6 +136,42 @@ function Register({ onRegister, onSwitchToLogin }) {
               disabled={loading}
               className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
               placeholder="Enter your email"
+            />
+          </div>
+
+          {/* City Input */}
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+              <FaEnvelope className="mr-2 text-green-600 text-sm" />
+              City *
+            </label>
+            <input
+              type="text"
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              required
+              disabled={loading}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
+              placeholder="Enter your city"
+            />
+          </div>
+
+          {/* Username Input */}
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+              <FaUser className="mr-2 text-green-600 text-sm" />
+              Username *
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+              disabled={loading}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
+              placeholder="Choose a username"
             />
           </div>
 

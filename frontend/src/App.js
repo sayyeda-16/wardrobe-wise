@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 // Contexts
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // --- Core Imports (Day 1) ---
-import Login from './pages/Login';
-import Register from './pages/Register';
-import Wardrobe from './pages/Wardrobe';
-import Marketplace from './pages/Marketplace';
-import AddItem from './pages/AddItem';
-import Navbar from './components/Navbar';
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Wardrobe from "./pages/Wardrobe";
+import Marketplace from "./pages/Marketplace";
+import AddItem from "./pages/AddItem";
+import Navbar from "./components/Navbar";
 import ItemDetail from './pages/ItemDetail'; 
 // In your main router file (e.g., App.js, Router.js)
 
@@ -28,7 +28,13 @@ import UserProfile from './pages/UserProfile';
 import Settings from './pages/Settings'; 	 	 	 	 
 import WardrobeStats from './components/WardrobeStats'; 
 
-// Main app component that uses the auth and toast contexts
+// protected Route Component
+function PrivateRoute({ children }) {
+  const { user } = useAuth();
+  return user ? children : <Navigate to="/login" />;
+}
+
+// main App Content
 function AppContent() {
 	const { user, login, register, logout } = useAuth();
 	const navigate = useNavigate();
@@ -84,11 +90,10 @@ function AppContent() {
 		navToWardrobe(); // Navigate after adding item
 	};
 
-	const handleLogout = () => {
-		logout();
-		
-		navigate('/login');
-	};
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
 	// Show auth pages if not logged in (Unchanged)
 	if (!user) {
@@ -189,6 +194,7 @@ const GlobalStyles = () => (
 );
 
 
+// styling
 const styles = {
 	appContainer: {
 		minHeight: '100vh',
@@ -212,3 +218,4 @@ function App() {
 }
 
 export default App;
+
