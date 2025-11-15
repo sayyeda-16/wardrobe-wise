@@ -29,8 +29,8 @@ class AppUser(models.Model):
     def __str__(self):
         return self.full_name or self.user.username
 
-# models.py (add below your AppUser class)
 class Category(models.Model):
+    category_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=60, unique=True)
 
     class Meta:
@@ -38,6 +38,7 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
 
 
 class Brand(models.Model):
@@ -53,7 +54,11 @@ class Brand(models.Model):
 class Item(models.Model):
     item_id = models.AutoField(primary_key=True)  # match your DB PK
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE, db_column="user_id")
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.CASCADE,
+        db_column='category_id'   # MATCHES your DB
+    )
     brand = models.ForeignKey(Brand, on_delete=models.SET_NULL, null=True, blank=True)
     item_name = models.CharField(max_length=120)
     lifecycle = models.CharField(

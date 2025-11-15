@@ -29,9 +29,14 @@ import Settings from './pages/Settings';
 import WardrobeStats from './components/WardrobeStats'; 
 
 // protected Route Component
-function PrivateRoute({ children }) {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/login" />;
+function AdminRoute({ children }) {
+  const { user, loading } = useAuth();
+
+  if (loading) return null; // or spinner
+  if (!user) return <Navigate to="/login" />;
+  if (!user.is_staff) return <Navigate to="/wardrobe" />;
+
+  return children;
 }
 
 // main App Content
@@ -65,15 +70,22 @@ function AppContent() {
 	};
 
 	const handleLogin = async (email, password) => {
-		try {
-			const response = await login(email, password);
-		
+	try {
+		const response = await login(email, password);
+
+		if (response.success) {
+		// Redirect admin to analytics, normal users to wardrobe
+		if (response.user?.is_staff || response.user?.is_superuser) {
+			navigate('/analytics');
+		} else {
 			navigate('/wardrobe');
-			return response;
-		} catch (error) {
-		
-			throw error;
 		}
+		}
+
+		return response;
+	} catch (error) {
+		throw error;
+	}
 	};
 
 	const handleAddItem = (newItem) => {
@@ -150,8 +162,11 @@ function AppContent() {
 					{/* Day 2/4 Feature Routes (Dev 1) */}
 					<Route path="/profile" element={<UserProfile />} /> 	
 					<Route path="/settings" element={<Settings />} /> 	 	
-					<Route path="/stats" element={<AnalyticsPage />} /> 	
-					
+					<Route path="/analytics" element={
+					<AdminRoute>
+						<AnalyticsPage />
+					</AdminRoute>
+					} />					
 					{/* Default Routes: Redirect base path or unknown path to wardrobe */}
 					<Route path="/" element={<Navigate to="/wardrobe" />} />
 					<Route path="*" element={<Navigate to="/wardrobe" />} />

@@ -17,12 +17,27 @@ export const AuthProvider = ({ children }) => {
   // check for existing login on app start
   useEffect(() => {
     const token = localStorage.getItem("token");
-    const userData = localStorage.getItem("user");
-    if (token && userData) {
-      setUser(JSON.parse(userData));
+
+    if (!token) {
+      setLoading(false);
+      return;
     }
-    setLoading(false);
+
+    // Fetch user so is_staff stays accurate
+    fetch("http://127.0.0.1:8000/api/auth/me/", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => {
+        if (data) {
+          setUser(data);
+          localStorage.setItem("user", JSON.stringify(data));
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, []);
+
 
   // login function
   const login = async (email, password) => {
@@ -35,7 +50,6 @@ export const AuthProvider = ({ children }) => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        console.error("Login failed:", errorData);
         return { success: false, message: errorData.detail || "Login failed" };
       }
 
@@ -43,25 +57,27 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem("token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
 
-      // fetch user profile
-      const profileRes = await fetch("http://127.0.0.1:8000/api/user/", {
-        headers: {
-          Authorization: `Bearer ${data.access}`,
-        },
+      // ✨ Fetch admin flags (is_staff, is_superuser)
+      let profileData = null; // <-- define here
+      const profileRes = await fetch("http://127.0.0.1:8000/api/auth/me/", {
+        headers: { Authorization: `Bearer ${data.access}` },
       });
 
       if (profileRes.ok) {
-        const profileData = await profileRes.json();
+        profileData = await profileRes.json(); // <-- assign here
         setUser(profileData);
         localStorage.setItem("user", JSON.stringify(profileData));
       }
 
-      return { success: true };
+      return { success: true, user: profileData }; // now it's defined
+
     } catch (error) {
       console.error("Login error:", error);
       return { success: false, message: "Server error" };
     }
   };
+
+
 
   // register function (auto-login after)
   const register = async (userData) => {
