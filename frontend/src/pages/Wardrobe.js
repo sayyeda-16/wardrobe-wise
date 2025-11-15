@@ -1,12 +1,27 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// src/pages/Wardrobe.js (UPDATED STYLING)
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FaLeaf, FaPlus, FaRecycle, FaSeedling, FaFilter } from 'react-icons/fa';
+import { FaLeaf, FaPlus, FaRecycle, FaSeedling, FaFilter, FaSpinner } from 'react-icons/fa';
 import ItemCard from '../components/ItemCard';
 import ItemFilters from '../components/ItemFilters';
 import ItemDetails from '../components/ItemDetails';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-function Wardrobe({ onAddItem }) {
-  const { user, getAuthHeaders } = useAuth();
+// Mock Data structure for fallback
+const MOCK_ITEMS = [
+    { item_id: 1, item_name: 'Organic Cotton T-Shirt', brand: 'Patagonia', category: 'Tops', size_label: 'M', color: 'Natural', condition: 'Like New', material: 'Organic Cotton', lifecycle: 'Active', seller_type: 'Retail', price_cents: 6000, purchase_date: '2024-01-15', image_url: 'placeholder.jpg' },
+    { item_id: 2, item_name: 'Sustainable Denim Jeans', brand: "Levi's", category: 'Bottoms', size_label: '32', color: 'Indigo', condition: 'Good', material: 'Recycled Denim', lifecycle: 'Active', seller_type: 'LocalMarket', price_cents: 4500, purchase_date: '2024-03-20', image_url: 'placeholder.jpg' },
+    { item_id: 3, item_name: 'Eco-Friendly Jacket', brand: 'The North Face', category: 'Outerwear', size_label: 'L', color: 'Forest Green', condition: 'Excellent', material: 'Recycled Polyester', lifecycle: 'Sold', seller_type: 'SecondHand', price_cents: 8000, purchase_date: '2023-11-01', image_url: 'placeholder.jpg' },
+    { item_id: 4, item_name: 'Recycled Sneakers', brand: 'Veja', category: 'Shoes', size_label: '9', color: 'White', condition: 'Worn', material: 'Recycled Materials', lifecycle: 'Listed', seller_type: 'Retail', price_cents: 12000, purchase_date: '2024-06-01', image_url: 'placeholder.jpg' },
+    { item_id: 5, item_name: 'Vintage Silk Scarf', brand: 'Unbranded', category: 'Accessories', size_label: 'One Size', color: 'Red', condition: 'Fair', material: 'Silk', lifecycle: 'Active', seller_type: 'Vintage', price_cents: 2000, purchase_date: '2024-08-10', image_url: 'placeholder.jpg' },
+];
+
+const LIFECYCLE_OPTIONS = ['Active', 'Listed', 'Sold', 'Donated'];
+
+function Wardrobe() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -15,94 +30,76 @@ function Wardrobe({ onAddItem }) {
     category: '',
     brand: '',
     color: '',
-    condition: ''
+    condition: '',
+    lifecycle: 'Active',
   });
   const [selectedItem, setSelectedItem] = useState(null);
   const [showItemDetails, setShowItemDetails] = useState(false);
 
-  // Fetch user's items from backend - wrapped in useCallback to avoid infinite re-renders
   const fetchItems = useCallback(async () => {
+    setLoading(true);
+    setError('');
     try {
-      setLoading(true);
-      const response = await fetch('http://localhost:8000/api/items/', {
-        headers: getAuthHeaders(),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setItems(data);
-        setFilteredItems(data);
-      } else {
-        throw new Error('Backend not available, using mock data');
-      }
-    } catch (error) {
-      console.error('Error fetching items:', error);
-      const mockItems = [
-        { 
-          item_id: 1, 
-          item_name: 'Organic Cotton T-Shirt', 
-          brand_name: 'Patagonia', 
-          category_name: 'Tops',
-          size_label: 'M', 
-          color: 'Natural', 
-          condition: 'Like New',
-          material: 'Organic Cotton',
-          lifecycle: 'Active'
-        },
-        { 
-          item_id: 2, 
-          item_name: 'Sustainable Denim Jeans', 
-          brand_name: 'Levi\'s', 
-          category_name: 'Bottoms',
-          size_label: '32', 
-          color: 'Indigo', 
-          condition: 'Good',
-          material: 'Recycled Denim',
-          lifecycle: 'Active'
-        },
-        { 
-          item_id: 3, 
-          item_name: 'Eco-Friendly Jacket', 
-          brand_name: 'The North Face', 
-          category_name: 'Outerwear',
-          size_label: 'L', 
-          color: 'Forest Green', 
-          condition: 'Excellent',
-          material: 'Recycled Polyester',
-          lifecycle: 'Sold'
-        }
-      ];
-      setItems(mockItems);
-      setFilteredItems(mockItems);
-      setError('Using sustainable fashion demo data');
+      const response = await axios.get('/api/items/wardrobe/'); 
+      setItems(response.data);
+    } catch (apiError) {
+      console.error('Error fetching items from API. Using mock data:', apiError.message);
+      setItems(MOCK_ITEMS);
+      setError('Using sustainable fashion demo data (API not available)');
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders]);
+  }, []);
 
-  // Fetch items on component mount
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
 
-  // Apply filters whenever filters or items change
+  const filterOptions = useMemo(() => {
+    const allBrands = new Set();
+    const allCategories = new Set();
+    const allColors = new Set();
+    const allConditions = new Set();
+
+    items.forEach(item => {
+      if (item.brand) allBrands.add(item.brand);
+      if (item.category) allCategories.add(item.category);
+      if (item.color) allColors.add(item.color);
+      if (item.condition) allConditions.add(item.condition);
+    });
+
+    return {
+      brands: Array.from(allBrands).sort(),
+      categories: Array.from(allCategories).sort(),
+      colors: Array.from(allColors).sort(),
+      conditions: Array.from(allConditions).sort(),
+      lifecycles: LIFECYCLE_OPTIONS,
+    };
+  }, [items]);
+
   useEffect(() => {
     const filtered = items.filter(item => {
+      const brandName = item.brand || '';
+      const categoryName = item.category || '';
+      const colorValue = item.color || '';
+      const conditionValue = item.condition || '';
+      const lifecycleValue = item.lifecycle || '';
+
       return (
-        (filters.category === '' || (item.category_name || item.category) === filters.category) &&
-        (filters.brand === '' || (item.brand_name || item.brand).toLowerCase().includes(filters.brand.toLowerCase())) &&
-        (filters.color === '' || item.color.toLowerCase().includes(filters.color.toLowerCase())) &&
-        (filters.condition === '' || item.condition === filters.condition)
+        (filters.category === '' || categoryName === filters.category) &&
+        (filters.brand === '' || brandName.toLowerCase().includes(filters.brand.toLowerCase())) &&
+        (filters.color === '' || colorValue.toLowerCase().includes(filters.color.toLowerCase())) &&
+        (filters.condition === '' || conditionValue === filters.condition) &&
+        (filters.lifecycle === '' || lifecycleValue === filters.lifecycle)
       );
     });
     setFilteredItems(filtered);
   }, [filters, items]);
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
+  const handleFilterChange = (field, value) => {
     setFilters(prev => ({
       ...prev,
-      [name]: value
+      [field]: value
     }));
   };
 
@@ -111,7 +108,8 @@ function Wardrobe({ onAddItem }) {
       category: '',
       brand: '',
       color: '',
-      condition: ''
+      condition: '',
+      lifecycle: 'Active',
     });
   };
 
@@ -126,33 +124,24 @@ function Wardrobe({ onAddItem }) {
   };
 
   const handleSellItem = async (item) => {
-    const price = prompt(`Set sustainable price for ${item.item_name || item.name}:`);
-    if (!price || isNaN(price)) return;
+    const price = prompt(`Set price (USD) for ${item.item_name || item.name}:`);
+    if (!price || isNaN(price) || parseFloat(price) <= 0) return;
 
     try {
-      const response = await fetch('http://localhost:8000/api/listings/', {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          item_id: item.item_id || item.id,
-          price: parseFloat(price)
-        }),
+      await axios.post('/api/listings/', {
+        item_id: item.item_id,
+        price_cents: Math.round(parseFloat(price) * 100)
       });
-
-      if (response.ok) {
-        alert('Item listed for sustainable resale!');
-        fetchItems();
-        handleCloseDetails();
-      } else {
-        throw new Error('Failed to list item');
-      }
+      alert('Item successfully listed for sustainable resale!');
+      fetchItems();
+      handleCloseDetails();
     } catch (error) {
       console.error('Error listing item:', error);
-      alert('Item listed for circular fashion!');
+      alert('Item listed for circular fashion! (Mock Success)');
       setItems(prevItems => 
         prevItems.map(i => 
           i.item_id === item.item_id 
-            ? { ...i, lifecycle: 'Sold' }
+            ? { ...i, lifecycle: 'Listed' }
             : i
         )
       );
@@ -161,37 +150,29 @@ function Wardrobe({ onAddItem }) {
   };
 
   const handleDeleteItem = async (item) => {
-    if (!window.confirm(`Consider donating ${item.item_name || item.name} instead of deleting?`)) return;
+    if (!window.confirm(`Consider re-purposing ${item.item_name || item.name} instead of deleting?`)) return;
 
     try {
-      const response = await fetch(`/api/items/${item.item_id || item.id}/`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
-
-      if (response.ok) {
-        setItems(prevItems => prevItems.filter(i => i.item_id !== item.item_id));
-        alert('Item removed sustainably');
-        handleCloseDetails();
-      } else {
-        throw new Error('Failed to delete item');
-      }
+      await axios.delete(`/api/items/${item.item_id}/`);
+      alert('Item removed sustainably');
+      fetchItems();
+      handleCloseDetails();
     } catch (error) {
       console.error('Error deleting item:', error);
       setItems(prevItems => prevItems.filter(i => i.item_id !== item.item_id));
-      alert('Item removed from wardrobe');
+      alert('Item removed from wardrobe (Mock Success)');
       handleCloseDetails();
     }
   };
 
   const handleEditItem = (item) => {
-    alert(`Edit sustainable details for ${item.item_name || item.name}`);
+    navigate(`/edit-item/${item.item_id}`);
   };
 
   if (loading) {
     return (
       <div style={styles.loadingContainer}>
-        <FaLeaf style={styles.loadingIcon} />
+        <FaSpinner style={styles.loadingIcon} />
         <div style={styles.loadingText}>Loading your sustainable wardrobe...</div>
       </div>
     );
@@ -201,6 +182,7 @@ function Wardrobe({ onAddItem }) {
     <div style={styles.container}>
       {/* Header Section */}
       <div style={styles.header}>
+        <div style={styles.headerBackground}></div>
         <div style={styles.headerContent}>
           <div style={styles.brandSection}>
             <div style={styles.logo}>
@@ -209,11 +191,11 @@ function Wardrobe({ onAddItem }) {
             </div>
             <h1 style={styles.title}>My Sustainable Wardrobe</h1>
             <p style={styles.subtitle}>
-              Welcome back, {user?.username}! Manage your eco-friendly fashion collection.
+              Welcome back, {user?.username || 'user'}! Manage your eco-friendly fashion collection.
             </p>
           </div>
 
-          <button onClick={onAddItem} style={styles.addButton}>
+          <button onClick={() => navigate('/add-item')} style={styles.addButton}>
             <FaPlus style={styles.addIcon} />
             Add Sustainable Item
           </button>
@@ -221,27 +203,9 @@ function Wardrobe({ onAddItem }) {
 
         {/* Eco Stats Bar */}
         <div style={styles.statsBar}>
-          <div style={styles.statItem}>
-            <FaRecycle style={styles.statIcon} />
-            <div>
-              <div style={styles.statNumber}>{items.filter(item => item.lifecycle === 'Sold').length}</div>
-              <div style={styles.statLabel}>Items Resold</div>
-            </div>
-          </div>
-          <div style={styles.statItem}>
-            <FaSeedling style={styles.statIcon} />
-            <div>
-              <div style={styles.statNumber}>{items.length}</div>
-              <div style={styles.statLabel}>Sustainable Pieces</div>
-            </div>
-          </div>
-          <div style={styles.statItem}>
-            <FaLeaf style={styles.statIcon} />
-            <div>
-              <div style={styles.statNumber}>{new Set(items.map(item => item.brand_name || item.brand)).size}</div>
-              <div style={styles.statLabel}>Eco Brands</div>
-            </div>
-          </div>
+          <StatBox icon={FaSeedling} value={items.length} label="Sustainable Pieces" />
+          <StatBox icon={FaRecycle} value={items.filter(item => item.lifecycle === 'Sold').length} label="Items Resold" />
+          <StatBox icon={FaLeaf} value={filterOptions.brands.length} label="Eco Brands Tracked" />
         </div>
       </div>
 
@@ -262,6 +226,7 @@ function Wardrobe({ onAddItem }) {
           filters={filters}
           onFilterChange={handleFilterChange}
           onClearFilters={handleClearFilters}
+          options={filterOptions}
         />
       </div>
 
@@ -279,7 +244,7 @@ function Wardrobe({ onAddItem }) {
             }
           </p>
           {items.length === 0 && (
-            <button onClick={onAddItem} style={styles.ctaButton}>
+            <button onClick={() => navigate('/add-item')} style={styles.ctaButton}>
               <FaPlus style={styles.ctaIcon} />
               Begin Sustainable Collection
             </button>
@@ -299,11 +264,7 @@ function Wardrobe({ onAddItem }) {
           <div style={styles.itemsGrid}>
             {filteredItems.map(item => (
               <div key={item.item_id || item.id} onClick={() => handleViewDetails(item)} style={styles.itemWrapper}>
-                <ItemCard 
-                  item={item}
-                  onSell={handleSellItem}
-                  onDelete={handleDeleteItem}
-                />
+                <ItemCard item={item} />
               </div>
             ))}
           </div>
@@ -323,10 +284,20 @@ function Wardrobe({ onAddItem }) {
   );
 }
 
+const StatBox = ({ icon: Icon, value, label }) => (
+  <div style={styles.statItem}>
+    <Icon style={styles.statIcon} />
+    <div>
+      <div style={styles.statNumber}>{value}</div>
+      <div style={styles.statLabel}>{label}</div>
+    </div>
+  </div>
+);
+
 const styles = {
   container: {
     minHeight: '100vh',
-    background: 'linear-gradient(135deg, #f0f7e6 0%, #e8f4d3 100%)',
+    background: 'linear-gradient(135deg, #edf7e6ff 0%, #dff4d3ff 100%)',
     padding: '20px',
   },
   loadingContainer: {
@@ -347,18 +318,30 @@ const styles = {
     color: '#556b2f',
   },
   header: {
-    background: 'linear-gradient(135deg, #556b2f 0%, #6b8e23 100%)',
-    borderRadius: '20px',
+    position: 'relative',
     padding: '40px',
     marginBottom: '30px',
     color: 'white',
     boxShadow: '0 10px 40px rgba(34, 51, 17, 0.2)',
+    overflow: 'hidden',
+  },
+  headerBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundImage: 'linear-gradient(rgba(233, 244, 213, 0.4), rgba(233, 244, 213, 0.4)), url("https://img.freepik.com/premium-photo/xaa-sustainable-fashion-concept-banner_958297-9941.jpg?semt=ais_incoming&w=740&q=80")',    
+    backgroundSize: 'cover',
+    backgroundPosition: 'center 70%',
   },
   headerContent: {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: '30px',
+    position: 'relative',
+    zIndex: 2,
   },
   brandSection: {
     flex: 1,
@@ -371,7 +354,7 @@ const styles = {
   logoIcon: {
     fontSize: '32px',
     marginRight: '12px',
-    color: '#d4e6a4',
+    color: '#6f8260ff',
   },
   logoText: {
     fontSize: '28px',
@@ -387,16 +370,15 @@ const styles = {
   },
   subtitle: {
     fontSize: '18px',
-    color: '#d4e6a4',
+    color: '#6f8260ff',
     margin: 0,
     opacity: 0.9,
   },
   addButton: {
     padding: '15px 25px',
-    backgroundColor: '#d4e6a4',
+    backgroundColor: '#8ea67cff',
     color: '#556b2f',
     border: 'none',
-    borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -414,6 +396,8 @@ const styles = {
     gap: '30px',
     paddingTop: '20px',
     borderTop: '1px solid rgba(212, 230, 164, 0.3)',
+    position: 'relative',
+    zIndex: 2,
   },
   statItem: {
     display: 'flex',
@@ -422,7 +406,7 @@ const styles = {
   },
   statIcon: {
     fontSize: '24px',
-    color: '#d4e6a4',
+    color: '#6f8260ff',
   },
   statNumber: {
     fontSize: '24px',
@@ -431,7 +415,7 @@ const styles = {
   },
   statLabel: {
     fontSize: '14px',
-    color: '#d4e6a4',
+    color: '#6f8260ff',
     opacity: 0.9,
   },
   error: {
@@ -440,10 +424,9 @@ const styles = {
     padding: '16px 20px',
     backgroundColor: '#f0f7e6',
     color: '#556b2f',
-    borderRadius: '12px',
     marginBottom: '20px',
     fontSize: '14px',
-    border: '1px solid #d4e6a4',
+    border: '1px solid #6f8260ff',
   },
   errorIcon: {
     marginRight: '10px',
@@ -451,7 +434,6 @@ const styles = {
   },
   filtersContainer: {
     backgroundColor: 'white',
-    borderRadius: '16px',
     padding: '20px',
     marginBottom: '30px',
     boxShadow: '0 4px 20px rgba(34, 51, 17, 0.1)',
@@ -476,9 +458,8 @@ const styles = {
     textAlign: 'center',
     padding: '80px 40px',
     backgroundColor: 'white',
-    borderRadius: '20px',
     boxShadow: '0 4px 20px rgba(34, 51, 17, 0.1)',
-    border: '2px dashed #d4e6a4',
+    border: '2px dashed #6f8260ff',
   },
   emptyIcon: {
     fontSize: '80px',
@@ -504,7 +485,6 @@ const styles = {
     backgroundColor: '#6b8e23',
     color: 'white',
     border: 'none',
-    borderRadius: '12px',
     fontSize: '16px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -533,7 +513,6 @@ const styles = {
     fontSize: '14px',
     backgroundColor: '#f0f7e6',
     padding: '8px 16px',
-    borderRadius: '20px',
     fontWeight: '500',
   },
   itemsGrid: {

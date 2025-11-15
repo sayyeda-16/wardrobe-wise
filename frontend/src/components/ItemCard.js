@@ -1,279 +1,168 @@
+// src/components/ItemCard.js (UPDATED CODE)
 import React from 'react';
-import { FaTag, FaLeaf, FaRecycle, FaSeedling, FaTshirt, FaShoePrints, FaGem } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
+import { FaTag, FaLeaf, FaRecycle, FaSeedling, FaTshirt, FaShoePrints, FaGem, FaShoppingCart, FaTrash } from 'react-icons/fa';
 
-function ItemCard({ item, onSell, onDelete }) {
-  const getConditionColor = (condition) => {
-    switch (condition) {
-      case 'New': return '#10b981';
-      case 'Like New': return '#059669';
-      case 'Good': return '#d97706';
-      case 'Fair': return '#dc2626';
-      default: return '#6b7280';
-    }
-  };
+// --- Utility Functions (Kept in JS as they generate dynamic styles) ---
 
-  const getCategoryIcon = (category) => {
-    switch (category) {
-      case 'Tops': return <FaTshirt style={{ fontSize: '14px' }} />;
-      case 'Bottoms': return <FaSeedling style={{ fontSize: '14px' }} />;
-      case 'Shoes': return <FaShoePrints style={{ fontSize: '14px' }} />;
-      case 'Accessories': return <FaGem style={{ fontSize: '14px' }} />;
-      default: return <FaLeaf style={{ fontSize: '14px' }} />;
-    }
-  };
+// Map condition to Tailwind-compatible color class names
+const getConditionColor = (condition) => {
+  switch (condition) {
+    case 'New': return 'text-emerald-600'; // Matches #10b981
+    case 'Like New': return 'text-green-700'; // Matches #059669
+    case 'Good': return 'text-amber-600'; // Matches #d97706
+    case 'Fair': return 'text-red-600'; // Matches #dc2626
+    default: return 'text-gray-500';
+  }
+};
 
-  const getCardColor = (itemId) => {
-    const colors = [
-      { background: '#f0f7e6', border: '#d4e6a4', accent: '#6b8e23' }, // Light sage
-      { background: '#e8f4d3', border: '#b8d4a4', accent: '#556b2f' }, // Medium sage
-      { background: '#d4e6a4', border: '#a4b884', accent: '#3a5c1e' }, // Dark sage
-      { background: '#f5f9eb', border: '#e2edc4', accent: '#87a96b' }, // Pale green
-    ];
-    return colors[itemId % colors.length];
-  };
+// Define dynamic color themes for the card based on the existing logic
+const getCardColor = (itemId) => {
+  // NOTE: These colors are dynamic and MUST be applied via the `style` prop
+  const colors = [
+    { background: '#f0f7e6', border: '#d4e6a4', accent: '#6b8e23' }, // Sage (Primary)
+    { background: '#e8f4d3', border: '#b8d4a4', accent: '#556b2f' }, // Olive (Secondary)
+    { background: '#d4e6a4', border: '#a4b884', accent: '#3a5c1e' }, // Dark Olive (Tertiary)
+    { background: '#f5f9eb', border: '#e2edc4', accent: '#87a96b' }, // Pale Green (Quaternary)
+  ];
+  return colors[(itemId || 0) % colors.length];
+};
 
+const getCategoryIcon = (category) => {
+  switch (category) {
+    case 'Tops': return <FaTshirt className="text-sm" />;
+    case 'Bottoms': return <FaSeedling className="text-sm" />;
+    case 'Shoes': return <FaShoePrints className="text-sm" />;
+    case 'Accessories': return <FaGem className="text-sm" />;
+    default: return <FaLeaf className="text-sm" />;
+  }
+};
+
+const formatPrice = (cents) => `$${(cents / 100).toFixed(2)}`;
+
+// --- Main Component ---
+
+function ItemCard({ item, onSell, onDelete, isMarketplace = false }) { 
+  
   const cardColor = getCardColor(item.item_id || item.id);
+  
+  // Dynamic styles are handled via inline style prop using the calculated colors
+  const cardStyle = {
+    backgroundColor: cardColor.background,
+    borderColor: cardColor.border,
+  };
+
+  const accentStyle = {
+    color: cardColor.accent,
+  };
 
   return (
-    <div style={{
-      ...styles.card,
-      backgroundColor: cardColor.background,
-      borderColor: cardColor.border,
-    }}>
+    <div 
+      className="border-2 p-5 rounded-2xl transition-all duration-300 cursor-pointer h-full flex flex-col hover:shadow-xl hover:-translate-y-1"
+      style={cardStyle}
+    >
+      
       {/* Header */}
-      <div style={styles.header}>
-        <h3 style={{
-          ...styles.title,
-          color: cardColor.accent,
-        }}>
-          {item.item_name || item.name}
+      <div className="flex justify-between items-start mb-3">
+        <h3 
+          className="text-xl font-semibold leading-tight flex-1"
+          style={accentStyle}
+        >
+          {item.item_name || item.name || item.title}
         </h3>
-        {item.lifecycle === 'Sold' && (
-          <div style={styles.soldBadge}>
-            <FaTag style={styles.soldIcon} />
+        
+        {/* Price Tag (Marketplace) or Listed Badge (Wardrobe) */}
+        {isMarketplace && item.list_price_cents && (
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-50 text-amber-700 rounded-full text-sm font-medium border border-yellow-300 ml-2 flex-shrink-0">
+            <FaTag className="text-xs" />
+            <span className="font-bold">{formatPrice(item.list_price_cents)}</span>
+          </div>
+        )}
+        
+        {!isMarketplace && item.lifecycle === 'Listed' && (
+          <div className="flex items-center gap-1.5 px-3 py-1 bg-yellow-100 text-amber-800 rounded-full text-xs font-medium ml-2 flex-shrink-0">
+            <FaTag className="text-xs" />
             Listed
           </div>
         )}
       </div>
 
       {/* Brand and Category */}
-      <div style={styles.brandSection}>
-        <span style={styles.brand}>
-          {item.brand_name || item.brand}
+      <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-300 border-opacity-50">
+        <span className="text-sm font-semibold text-gray-700" style={{ color: cardColor.accent }}>
+          {item.brand_name || item.brand || item.seller || 'Unknown Brand'}
         </span>
-        <div style={styles.category}>
+        <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium">
           {getCategoryIcon(item.category_name || item.category)}
           <span>{item.category_name || item.category}</span>
         </div>
       </div>
 
       {/* Details */}
-      <div style={styles.details}>
-        <div style={styles.detailRow}>
-          <span style={styles.detailLabel}>Size:</span>
-          <span style={styles.detailValue}>{item.size_label || item.size}</span>
+      <div className="flex-1 mb-5 text-sm space-y-1.5">
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500 font-medium">Size:</span>
+          <span className="text-gray-800">{item.size_label || item.size || 'N/A'}</span>
         </div>
-        <div style={styles.detailRow}>
-          <span style={styles.detailLabel}>Color:</span>
-          <span style={styles.detailValue}>{item.color}</span>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500 font-medium">Color:</span>
+          <span className="text-gray-800">{item.color || 'N/A'}</span>
         </div>
-        <div style={styles.detailRow}>
-          <span style={styles.detailLabel}>Condition:</span>
-          <span style={{
-            ...styles.condition,
-            color: getConditionColor(item.condition),
-          }}>
+        <div className="flex justify-between items-center">
+          <span className="text-gray-500 font-medium">Condition:</span>
+          <span className={`font-semibold text-xs uppercase ${getConditionColor(item.condition)}`}>
             {item.condition}
           </span>
         </div>
         {item.material && (
-          <div style={styles.detailRow}>
-            <span style={styles.detailLabel}>Material:</span>
-            <span style={styles.detailValue}>{item.material}</span>
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500 font-medium">Material:</span>
+            <span className="text-gray-800">{item.material}</span>
           </div>
         )}
       </div>
 
-      {/* Actions */}
-      <div style={styles.actions}>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onSell(item);
-          }}
-          style={{
-            ...styles.sellButton,
-            backgroundColor: cardColor.accent,
-          }}
-        >
-          <FaRecycle style={styles.buttonIcon} />
-          Resell
-        </button>
-        <button 
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(item);
-          }}
-          style={styles.deleteButton}
-        >
-          Remove
-        </button>
+      {/* Actions (Conditional based on isMarketplace) */}
+      <div className="flex gap-2.5 mt-auto">
+        {isMarketplace ? (
+          // Marketplace Action: Buy Now button
+          <Link 
+            to="/checkout" 
+            state={{ item: item }} 
+            className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-white rounded-xl text-sm font-semibold transition duration-200 hover:opacity-90 hover:-translate-y-0.5 shadow-md"
+            style={{ backgroundColor: cardColor.accent }}
+          >
+            <FaShoppingCart className="text-sm" />
+            Buy Now
+          </Link>
+        ) : (
+          // Wardrobe Actions: Resell and Remove buttons
+          <>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onSell(item);
+              }}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-white rounded-xl text-sm font-semibold transition duration-200 hover:opacity-90 hover:-translate-y-0.5 shadow-md"
+              style={{ backgroundColor: cardColor.accent }}
+            >
+              <FaRecycle className="text-sm" />
+              Resell
+            </button>
+            <button 
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(item);
+              }}
+              className="px-3 py-2 bg-transparent text-red-600 border border-red-600 rounded-xl text-sm font-medium transition duration-200 hover:bg-red-50 hover:text-red-700 hover:-translate-y-0.5"
+            >
+              <FaTrash className="text-xs" />
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
 }
-
-const styles = {
-  card: {
-    border: '2px solid',
-    padding: '20px',
-    borderRadius: '16px',
-    transition: 'all 0.3s ease',
-    cursor: 'pointer',
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-  },
-  header: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: '12px',
-  },
-  title: {
-    margin: 0,
-    fontSize: '1.25em',
-    fontWeight: '600',
-    lineHeight: '1.3',
-    flex: 1,
-  },
-  soldBadge: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '4px',
-    padding: '4px 8px',
-    backgroundColor: '#fef3c7',
-    color: '#92400e',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: '500',
-    marginLeft: '8px',
-  },
-  soldIcon: {
-    fontSize: '10px',
-  },
-  brandSection: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '15px',
-    paddingBottom: '12px',
-    borderBottom: '1px solid rgba(107, 142, 35, 0.2)',
-  },
-  brand: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#556b2f',
-  },
-  category: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    fontSize: '12px',
-    color: '#6b8e23',
-    fontWeight: '500',
-  },
-  details: {
-    flex: 1,
-    marginBottom: '15px',
-  },
-  detailRow: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '6px',
-    fontSize: '13px',
-  },
-  detailLabel: {
-    color: '#6b7280',
-    fontWeight: '500',
-  },
-  detailValue: {
-    color: '#374151',
-    fontWeight: '400',
-  },
-  condition: {
-    fontWeight: '600',
-    fontSize: '12px',
-  },
-  actions: {
-    display: 'flex',
-    gap: '8px',
-    marginTop: 'auto',
-  },
-  sellButton: {
-    flex: 1,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    padding: '8px 12px',
-    color: 'white',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: '600',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  deleteButton: {
-    padding: '8px 12px',
-    backgroundColor: 'transparent',
-    color: '#ef4444',
-    border: '1px solid #ef4444',
-    borderRadius: '8px',
-    fontSize: '13px',
-    fontWeight: '500',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  buttonIcon: {
-    fontSize: '11px',
-  },
-};
-
-// Add hover effects
-const cardStyleSheet = document.createElement('style');
-cardStyleSheet.innerText = `
-  .item-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 25px rgba(34, 51, 17, 0.15);
-  }
-
-  .sell-button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(107, 142, 35, 0.3);
-  }
-
-  .delete-button:hover {
-    background-color: #fee2e2;
-    transform: translateY(-1px);
-  }
-`;
-
-document.head.appendChild(cardStyleSheet);
-
-// Apply hover classes
-Object.assign(styles.card, {
-  className: 'item-card',
-});
-
-Object.assign(styles.sellButton, {
-  className: 'sell-button',
-});
-
-Object.assign(styles.deleteButton, {
-  className: 'delete-button',
-});
 
 export default ItemCard;

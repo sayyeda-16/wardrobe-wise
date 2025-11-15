@@ -1,26 +1,27 @@
 const BASE_URL = "http://127.0.0.1:8000/api";
 
-export async function registerUser(data) {
+export async function registerUser(userData) {
   try {
-    const response = await fetch(`${BASE_URL}/register/`, {
+    const response = await fetch("http://localhost:8000/api/register/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      body: JSON.stringify(userData),
     });
 
     const result = await response.json();
 
     if (!response.ok) {
       console.error("Registration failed:", result);
-      throw new Error(result.detail || "Registration failed");
+      return result;   // <-- return the error response 
     }
 
-    return result;
+    return result; // success
   } catch (error) {
     console.error("Error during registration:", error);
-    throw error;
+    return { detail: "Network or server error" }; // also return, do NOT throw
   }
 }
+
 
 // LOGIN FUNCTION
 export async function loginUser(credentials) {

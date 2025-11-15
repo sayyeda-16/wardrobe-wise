@@ -1,21 +1,30 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { FaLeaf, FaTshirt, FaStore, FaPlus, FaUser, FaSignOutAlt, FaSeedling } from 'react-icons/fa';
+import { useAuth } from '../contexts/AuthContext'; 
+import { 
+  FaLeaf, FaTshirt, FaStore, FaPlus, FaUser, FaSignOutAlt, FaSeedling, 
+  FaCog, FaChartBar, FaUserCircle 
+} from 'react-icons/fa';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const location = useLocation();
 
   const navItems = [
-    { path: '/wardrobe', label: 'My Wardrobe', icon: FaTshirt }, // Changed FaShirt to FaTshirt
-    { path: '/marketplace', label: 'Marketplace', icon: FaStore },
+    { path: '/stats', label: 'Stats', icon: FaChartBar }, 
+    { path: '/wardrobe', label: 'My Wardrobe', icon: FaTshirt }, 
     { path: '/add-item', label: 'Add Item', icon: FaPlus },
+    { path: '/marketplace', label: 'Marketplace', icon: FaStore },
+  ];
+  
+  const userLinks = [
+    { path: '/profile', label: 'Profile', icon: FaUserCircle },
+    { path: '/settings', label: 'Settings', icon: FaCog },
   ];
 
   return (
     <nav style={styles.navbar}>
-      {/* Background Pattern */}
+      {/* Background Image */}
       <div style={styles.background}></div>
       
       <div style={styles.container}>
@@ -23,12 +32,12 @@ const Navbar = () => {
         <Link to="/" style={styles.brand}>
           <div style={styles.logoContainer}>
             <FaLeaf style={styles.logoIcon} />
-            <span style={styles.brandText}>EcoWardrobe</span>
+            <span style={styles.brandText}>WardrobeWise</span>
           </div>
           <div style={styles.tagline}>Sustainable Fashion</div>
         </Link>
 
-        {/* Navigation Items */}
+        {/* Navigation Items - Removed container background */}
         {user && (
           <div style={styles.navItems}>
             {navItems.map((item) => {
@@ -42,6 +51,7 @@ const Navbar = () => {
                     ...styles.navLink,
                     ...(isActive ? styles.navLinkActive : {})
                   }}
+                  className="eco-nav-link"
                 >
                   <IconComponent style={styles.navIcon} />
                   {item.label}
@@ -55,6 +65,22 @@ const Navbar = () => {
         <div style={styles.userSection}>
           {user ? (
             <>
+              {/* User Profile Links */}
+              <div style={styles.userLinksContainer}>
+                {userLinks.map((item) => {
+                  const IconComponent = item.icon;
+                  return (
+                    <Link
+                      key={item.path}
+                      to={item.path}
+                      style={styles.profileLink}
+                    >
+                      <IconComponent style={styles.navIcon} />
+                    </Link>
+                  );
+                })}
+              </div>
+
               <div style={styles.userInfo}>
                 <div style={styles.userWelcome}>
                   <FaSeedling style={styles.ecoIcon} />
@@ -65,6 +91,7 @@ const Navbar = () => {
               <button
                 onClick={logout}
                 style={styles.logoutButton}
+                className="eco-logout-btn"
               >
                 <FaSignOutAlt style={styles.logoutIcon} />
                 Sign Out
@@ -75,12 +102,14 @@ const Navbar = () => {
               <Link
                 to="/login"
                 style={styles.loginButton}
+                className="eco-login-btn"
               >
                 Sign In
               </Link>
               <Link
                 to="/register"
                 style={styles.registerButton}
+                className="eco-register-btn"
               >
                 <FaUser style={styles.registerIcon} />
                 Join Sustainable Community
@@ -90,44 +119,39 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* Inline styles to ensure they're applied */}
+      {/* Inline styles */}
       <style>{`
-        .eco-navbar {
-          background: linear-gradient(135deg, #556b2f 0%, #6b8e23 100%) !important;
-          border-bottom: 2px solid rgba(212, 230, 164, 0.2) !important;
-        }
-        
         .eco-nav-link {
           transition: all 0.3s ease !important;
         }
         
         .eco-nav-link:hover {
-          background-color: rgba(212, 230, 164, 0.1) !important;
+          background-color: rgba(162, 186, 113, 0.2) !important;
           color: white !important;
-          border: 1px solid rgba(212, 230, 164, 0.3) !important;
+          border: 1px solid rgba(162, 186, 113, 0.4) !important;
           transform: translateY(-1px) !important;
         }
         
         .eco-logout-btn:hover {
-          background-color: #d4e6a4 !important;
+          background-color: #a2ba71 !important;
           color: #2d4a17 !important;
           transform: translateY(-2px) !important;
-          box-shadow: 0 6px 20px rgba(212, 230, 164, 0.4) !important;
+          box-shadow: 0 6px 20px rgba(162, 186, 113, 0.4) !important;
         }
         
         .eco-login-btn:hover {
           color: white !important;
-          background-color: rgba(212, 230, 164, 0.1) !important;
-          border: 1px solid rgba(212, 230, 164, 0.3) !important;
+          background-color: rgba(162, 186, 113, 0.2) !important;
+          border: 1px solid rgba(162, 186, 113, 0.4) !important;
           transform: translateY(-1px) !important;
         }
         
         .eco-register-btn:hover {
-          background-color: #e8f4d3 !important;
-          color: #556b2f !important;
+          background-color: #a2ba71 !important;
+          color: #2d4a17 !important;
           transform: translateY(-2px) !important;
-          box-shadow: 0 6px 25px rgba(212, 230, 164, 0.5) !important;
-          border: 2px solid #d4e6a4 !important;
+          box-shadow: 0 6px 25px rgba(162, 186, 113, 0.5) !important;
+          border: 2px solid #a2ba71 !important;
         }
       `}</style>
     </nav>
@@ -136,13 +160,12 @@ const Navbar = () => {
 
 const styles = {
   navbar: {
-    background: 'linear-gradient(135deg, #556b2f 0%, #6b8e23 100%)',
+    background: 'linear-gradient(135deg, #6f8260 0%, #5a6f4c 100%)',
     padding: '0',
     boxShadow: '0 4px 30px rgba(34, 51, 17, 0.15)',
-    borderBottom: '2px solid rgba(212, 230, 164, 0.2)',
+    borderBottom: '2px solid rgba(162, 186, 113, 0.3)',
     position: 'relative',
     overflow: 'hidden',
-    fontFamily: '"Poppins", "Segoe UI", sans-serif',
   },
   background: {
     position: 'absolute',
@@ -150,11 +173,9 @@ const styles = {
     left: 0,
     right: 0,
     bottom: 0,
-    background: `
-      radial-gradient(circle at 20% 50%, rgba(135, 169, 107, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(107, 142, 35, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 40% 80%, rgba(85, 107, 47, 0.2) 0%, transparent 50%)
-    `,
+    backgroundImage: 'linear-gradient(rgba(111, 130, 96, 0.7), rgba(111, 130, 96, 0.7)), url("https://etymologie.ca/cdn/shop/files/Etymologie-Sustainability-A-Journey.png?v=1698966090&width=2100")',
+    backgroundSize: 'cover',
+    backgroundPosition: 'center 30%',
     zIndex: 0,
   },
   container: {
@@ -205,12 +226,7 @@ const styles = {
   navItems: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
-    background: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: '16px',
-    padding: '8px',
-    backdropFilter: 'blur(10px)',
-    border: '1px solid rgba(212, 230, 164, 0.2)',
+    gap: '0',
   },
   navLink: {
     display: 'flex',
@@ -219,17 +235,16 @@ const styles = {
     padding: '12px 24px',
     color: '#e8f4d3',
     textDecoration: 'none',
-    borderRadius: '12px',
     fontSize: '15px',
     fontWeight: '600',
     transition: 'all 0.3s ease',
     border: '1px solid transparent',
   },
   navLinkActive: {
-    backgroundColor: 'rgba(212, 230, 164, 0.15)',
+    backgroundColor: 'rgba(162, 186, 113, 0.2)',
     color: 'white',
-    border: '1px solid rgba(212, 230, 164, 0.3)',
-    boxShadow: '0 4px 15px rgba(212, 230, 164, 0.2)',
+    border: '1px solid rgba(162, 186, 113, 0.4)',
+    boxShadow: '0 4px 15px rgba(162, 186, 113, 0.2)',
   },
   navIcon: {
     fontSize: '16px',
@@ -272,10 +287,9 @@ const styles = {
     alignItems: 'center',
     gap: '10px',
     padding: '12px 20px',
-    backgroundColor: 'rgba(212, 230, 164, 0.1)',
+    backgroundColor: 'rgba(162, 186, 113, 0.15)',
     color: '#e8f4d3',
-    border: '2px solid #d4e6a4',
-    borderRadius: '12px',
+    border: '2px solid #a2ba71',
     fontSize: '14px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -285,7 +299,7 @@ const styles = {
   },
   logoutIcon: {
     fontSize: '14px',
-    color: '#d4e6a4',
+    color: '#a2ba71',
   },
   authButtons: {
     display: 'flex',
@@ -299,7 +313,6 @@ const styles = {
     fontSize: '15px',
     fontWeight: '600',
     transition: 'all 0.3s ease',
-    borderRadius: '8px',
     border: '1px solid transparent',
   },
   registerButton: {
@@ -307,18 +320,31 @@ const styles = {
     alignItems: 'center',
     gap: '10px',
     padding: '14px 24px',
-    backgroundColor: '#d4e6a4',
+    backgroundColor: '#a2ba71',
     color: '#2d4a17',
     textDecoration: 'none',
-    borderRadius: '12px',
     fontSize: '15px',
     fontWeight: '700',
     transition: 'all 0.3s ease',
-    boxShadow: '0 4px 15px rgba(212, 230, 164, 0.3)',
+    boxShadow: '0 4px 15px rgba(162, 186, 113, 0.3)',
     border: '2px solid transparent',
   },
   registerIcon: {
     fontSize: '14px',
+  },
+  userLinksContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    marginRight: '10px',
+  },
+  profileLink: {
+    display: 'flex',
+    padding: '8px',
+    color: '#d4e6a4',
+    textDecoration: 'none',
+    transition: 'all 0.3s ease',
+    opacity: 0.8,
   },
 };
 
