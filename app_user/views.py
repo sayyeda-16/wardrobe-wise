@@ -4,12 +4,13 @@ from django.contrib.auth import get_user_model
 from .serializers import RegisterSerializer
 from .serializers import AppUserSerializer
 from .serializers import UserStatsSerializer, OrderSerializer, ListingSerializer
-from .serializers import ItemSerializer
+from .serializers import ItemSerializer, MarketplaceListingSerializer
 from .models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAdminUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
@@ -312,3 +313,27 @@ class ItemRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         user_profile = AppUser.objects.get(user=self.request.user)
         # Ensure user can only retrieve/update/delete their own items
         return Item.objects.filter(user=user_profile)
+
+class MarketplaceListingsView(generics.ListAPIView):
+    """
+    Returns a list of all ACTIVE listings available on the marketplace.
+    Allows unauthenticated access (AllowAny).
+    """
+    serializer_class = MarketplaceListingSerializer
+    permission_classes = [AllowAny]
+    
+    # The queryset defines what data is returned
+    def get_queryset(self):
+        # 1. Filter: Only return listings that are 'Active'
+        queryset = Listing.objects.filter(status='Active')
+        
+        # 2. Optimization: Pre-fetch related data (Item, Category, Brand) 
+        #    to avoid N+1 query problem, making the endpoint much faster.
+        queryset = queryset.select_related(
+            'item', 
+            'item__category', 
+            'item__brand'
+        )
+        
+        # 3. Ordering: Sort by newest listings first
+        return queryset.order_by('-listed_on', '-listing_id')

@@ -26,7 +26,7 @@ from app_user.views import TopSellingCategories, SalesHistory, TargetUserCohorts
 from app_user.views import CurrentUser
 from app_user.views import MeView
 from app_user.views import ItemListCreate, ItemRetrieveUpdateDestroy, UserListings
-
+from app_user.views import MarketplaceListingsView
 urlpatterns = [
     path('admin/', admin.site.urls),
 
@@ -62,5 +62,9 @@ urlpatterns = [
     path('api/items/<int:item_id>/', ItemRetrieveUpdateDestroy.as_view(), name='item-detail'),
     
     # 4. Listing creation (for Sell button in Wardrobe.js)
-    path('api/listings/', UserListings.as_view(), name='listing-create'), # Assuming UserListings handles POST for now
+    path('api/listings/', UserListings.as_view(), name='listing-create'), 
+
+    # marketplace
+    path('api/listings/all/', MarketplaceListingsView.as_view(), name='marketplace-list'),
+    path('api/marketplace/all/', MarketplaceListingsView.as_view(), name='marketplace-list'),
 ]

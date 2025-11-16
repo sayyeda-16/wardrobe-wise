@@ -116,3 +116,37 @@ class ItemSerializer(serializers.ModelSerializer):
             Purchase.objects.create(item=item, **purchase_data)
         
         return item
+
+class MarketplaceListingSerializer(serializers.ModelSerializer):
+    # Field to represent the name of the category
+    category_name = serializers.CharField(source='item.category.name', read_only=True)
+    
+    # Field to represent the name of the brand (can be null)
+    brand_name = serializers.CharField(source='item.brand.name', read_only=True, allow_null=True)
+    
+    # Item details from the Item table
+    item_name = serializers.CharField(source='item.item_name', read_only=True)
+    color = serializers.CharField(source='item.color', read_only=True)
+    condition = serializers.CharField(source='item.condition', read_only=True)
+    size_label = serializers.CharField(source='item.size_label', read_only=True)
+    
+    # We don't expose the seller_user_id, but the item details are included.
+
+    class Meta:
+        model = Listing
+        # Fields exposed to the frontend for the marketplace card
+        fields = [
+            'listing_id', 
+            'title', 
+            'description', 
+            'list_price_cents', 
+            'listed_on',
+            'view_count', 
+            'category_name', 
+            'brand_name',
+            'item_name', 
+            'color', 
+            'condition',
+            'size_label',
+            # Add image_url if you expose it through the Listing model or a related Item field
+        ]
