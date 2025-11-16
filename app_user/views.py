@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from .serializers import RegisterSerializer
 from .serializers import AppUserSerializer
 from .serializers import UserStatsSerializer, OrderSerializer, ListingSerializer
+from .serializers import ItemSerializer
 from .models import User
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
@@ -99,17 +100,29 @@ class UserOrders(APIView):
 
     def get(self, request):
         user_profile = AppUser.objects.get(user=request.user)
-        orders = Sale.objects.filter(buyer_user=user_profile).order_by('-sold_on')[:10]
+        
+        # Sale -> Listing -> Item, allowing access to item_name.
+        orders = Sale.objects.filter(
+            buyer_user=user_profile
+        ).select_related(
+            'listing__item' # Joins Sale to Listing, and Listing to Item
+        ).order_by('-sold_on')[:10]
+        
         serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data)
-
 
 class UserListings(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user_profile = AppUser.objects.get(user=request.user)
-        listings = Listing.objects.filter(seller_user=user_profile).order_by('-listing_id')[:10]
+        
+        listings = Listing.objects.filter(
+            seller_user=user_profile
+        ).select_related(
+            'item' # Joins Listing to Item
+        ).order_by('-listing_id')[:10]
+        
         serializer = ListingSerializer(listings, many=True)
         return Response(serializer.data)
 
@@ -274,3 +287,28 @@ class UsageFrequency(APIView):
         ]
 
         return Response(results)
+
+class ItemListCreate(generics.ListCreateAPIView):
+    serializer_class = ItemSerializer
+    permission_classes = [IsAuthenticated]
+
+    # For GET: returns all items for the user (Used by Wardrobe.js)
+    def get_queryset(self):
+        user_profile = AppUser.objects.get(user=self.request.user)
+        # Use select_related to efficiently join Item and Purchase data
+        return Item.objects.filter(user=user_profile).select_related('purchase', 'brand', 'category').order_by('-created_at')
+
+    # For POST: associates the new item with the current user (Used by /add-item)
+    def perform_create(self, serializer):
+        # The serializer handles creating both Item and Purchase
+        serializer.save(user=AppUser.objects.get(user=self.request.user))
+
+class ItemRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ItemSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'item_id'
+    
+    def get_queryset(self):
+        user_profile = AppUser.objects.get(user=self.request.user)
+        # Ensure user can only retrieve/update/delete their own items
+        return Item.objects.filter(user=user_profile)

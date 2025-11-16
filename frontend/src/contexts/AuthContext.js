@@ -1,4 +1,7 @@
+// src/contexts/AuthContext.js (FINALIZED)
+
 import React, { createContext, useState, useContext, useEffect } from "react";
+import api from "../api/axios"; // The correctly configured Axios instance
 
 const AuthContext = createContext();
 
@@ -8,27 +11,28 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // On app start — load access token & fetch user
+  // --- 1. Load Token on App Start and Set Axios Header ---
   useEffect(() => {
-    const token = localStorage.getItem("access_token"); // FIXED
+    const access_token = localStorage.getItem("access_token"); 
+    const stored_user_json = localStorage.getItem("user");
 
-    if (!token) {
-      setLoading(false);
-      return;
+    if (access_token) {
+      // ✅ CRITICAL FIX: Set the Authorization header for Axios immediately on load
+      api.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+
+      if (stored_user_json) {
+        try {
+          setUser(JSON.parse(stored_user_json));
+        } catch (e) {
+          console.error("Failed to parse user data from storage.", e);
+        }
+      }
+    } else {
+      // Ensure no Authorization header is set if the token is missing
+      delete api.defaults.headers.common['Authorization'];
     }
 
-    fetch("http://127.0.0.1:8000/api/auth/me/", {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => (res.ok ? res.json() : null))
-      .then(data => {
-        if (data) {
-          setUser(data);
-          localStorage.setItem("user", JSON.stringify(data));
-        }
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+    setLoading(false);
   }, []);
 
   // login function
@@ -47,11 +51,13 @@ export const AuthProvider = ({ children }) => {
 
       const data = await response.json();
 
-      // SAVE TOKENS (FIXED)
       localStorage.setItem("access_token", data.access);
       localStorage.setItem("refresh_token", data.refresh);
-
-      // Fetch user info (is_staff, is_superuser)
+      
+      // ✅ FIX IS HERE: Set the Authorization header immediately after successful login
+      api.defaults.headers.common['Authorization'] = `Bearer ${data.access}`;
+      
+      // Fetch user info (using explicit header for fetch call)
       const profileRes = await fetch("http://127.0.0.1:8000/api/auth/me/", {
         headers: { Authorization: `Bearer ${data.access}` },
       });
@@ -96,14 +102,18 @@ export const AuthProvider = ({ children }) => {
   // logout function
   const logout = () => {
     setUser(null);
-    localStorage.removeItem("access_token");  // FIXED
+    localStorage.removeItem("access_token"); 
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
+    
+    // ✅ CRITICAL FIX: Clear the Authorization header on logout
+    delete api.defaults.headers.common['Authorization'];
   };
 
-  // Helper for authenticated requests
+  // getAuthHeaders helper is now redundant since 'api' handles auth, 
+  // but if you must keep it for old fetch calls:
   const getAuthHeaders = () => {
-    const token = localStorage.getItem("access_token"); // FIXED
+    const token = localStorage.getItem("access_token"); 
     return {
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",

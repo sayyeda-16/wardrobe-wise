@@ -1,7 +1,7 @@
 // src/pages/AddItem.js (UPDATED STYLING)
 import React, { useState } from 'react';
 import { FaTshirt, FaTag, FaCheckCircle, FaSpinner, FaTimesCircle, FaCamera, FaLeaf } from 'react-icons/fa';
-import api from 'axios';
+import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 
 function AddItem() {

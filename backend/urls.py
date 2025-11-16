@@ -25,6 +25,7 @@ from app_user.views import UserProfileStats, UserOrders, UserListings
 from app_user.views import TopSellingCategories, SalesHistory, TargetUserCohorts, InventoryReport, UsageFrequency
 from app_user.views import CurrentUser
 from app_user.views import MeView
+from app_user.views import ItemListCreate, ItemRetrieveUpdateDestroy, UserListings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -51,4 +52,15 @@ urlpatterns = [
     path('api/reports/inventory/', InventoryReport.as_view(), name='inventory-report'),
     path('api/usage/frequency/', UsageFrequency.as_view(), name='usage-frequency'),
 
+    # items fetch and add
+    path('api/items/', ItemListCreate.as_view(), name='item-list-create'), 
+    
+    # 2. Wardrobe.js Fetch (using the same view, but often cleaner to specify a dedicated path for clarity)
+    path('api/items/wardrobe/', ItemListCreate.as_view(), name='item-wardrobe'), 
+    
+    # 3. Item Edit/Delete
+    path('api/items/<int:item_id>/', ItemRetrieveUpdateDestroy.as_view(), name='item-detail'),
+    
+    # 4. Listing creation (for Sell button in Wardrobe.js)
+    path('api/listings/', UserListings.as_view(), name='listing-create'), # Assuming UserListings handles POST for now
 ]
