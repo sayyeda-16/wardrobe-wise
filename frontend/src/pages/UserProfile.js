@@ -6,8 +6,6 @@ import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
 
-const statsRes = await api.get('/api/profile/stats/');
-
 // --- MOCK DATA FOR DEMONSTRATION ---
 const MOCK_USER_STATS = {
     total_items: 12,
