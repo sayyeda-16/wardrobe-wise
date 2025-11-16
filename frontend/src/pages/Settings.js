@@ -62,6 +62,8 @@ function Settings() {
 
     // Handle logout
     const handleLogout = () => {
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
         logout(); // Call auth context logout function
         navigate('/login'); // Redirect to login page
     };
