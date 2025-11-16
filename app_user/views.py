@@ -17,8 +17,9 @@ from .models import AppUser, Item, Purchase, Listing, Sale
 from django.db.models import Avg, Count, Sum
 from datetime import timedelta
 from django.utils import timezone
-
-
+from django.db.models import Sum, Count, F
+from datetime import timedelta
+from django.db.models.functions import TruncDay
 
 User = get_user_model()
 
@@ -173,30 +174,39 @@ class SalesHistory(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-
         filter_value = request.GET.get('filter', '30days')
         days_map = {'7days': 7, '30days': 30, 'year': 365}
         days = days_map.get(filter_value, 30)
 
         since = timezone.now().date() - timedelta(days=days)
 
-        sales = Sale.objects.filter(sold_on__gte=since)
+        # 1. Use TruncDay to group and annotate the results by date.
+        # Although 'sold_on' is a DateField, using TruncDay ensures
+        # the database performs the grouping correctly for the aggregation.
+        data = (
+            Sale.objects
+            .filter(sold_on__gte=since)
+            # Annotate with the truncated date, aliased as 'sale_date'
+            .annotate(sale_date=TruncDay('sold_on')) 
+            # Group by the new 'sale_date' alias
+            .values('sale_date')
+            # Sum the revenue
+            .annotate(total_revenue_cents=Sum('sale_price_cents'))
+            .order_by('sale_date')
+        )
 
+        # 2. Format the results for the frontend chart component
         results = [
             {
-                "id": s.sale_id,
-                "item": s.listing.item.item_name,
-                "category": s.listing.item.category.name,
-                "seller": s.listing.seller_user.full_name,
-                "buyer": s.buyer_user.full_name,
-                "price": s.sale_price_cents,
-                "date": s.sold_on,
+                # The 'sale_date' object will be a datetime object due to TruncDay, 
+                # so we convert it to a date string.
+                "date": row['sale_date'].strftime('%Y-%m-%d') if row['sale_date'] else None,
+                "revenue": row['total_revenue_cents']
             }
-            for s in sales
+            for row in data
         ]
 
         return Response(results)
-
 
 # view 5
 class TargetUserCohorts(APIView):

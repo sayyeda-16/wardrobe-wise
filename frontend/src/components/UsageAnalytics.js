@@ -3,6 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaChartBar, FaChartPie, FaFilter, FaTable, FaUserTag, FaDollarSign } from 'react-icons/fa';
 import api from '../api/axios'; 
 import { useAuth } from '../contexts/AuthContext';
+import SalesHistoryLineChart from '../components/SalesHistoryLineChart';
+import TopCategoriesBarChart from '../components/TopCategoriesBarChart';
 
 
 // --- CHART PLACEHOLDER COMPONENT (FOR VISUALS) ---
@@ -15,6 +17,25 @@ const ChartPlaceholder = ({ title, icon: Icon, description }) => (
         <div className="flex-grow bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 font-semibold">
             {/* Chart Rendering Code (e.g., Chart.js) would go here */}
             [Chart Visualization Area]
+        </div>
+    </div>
+);
+
+const ChartContainer = ({ title, icon: Icon, description, data, ChartComponent }) => (
+    <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-100 h-96 flex flex-col">
+        <h3 className="text-xl font-bold text-gray-800 mb-3 flex items-center">
+            <Icon className="mr-2 text-green-500" /> {title}
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">{description}</p>
+        <div className="flex-grow flex items-center justify-center text-gray-400 font-semibold">
+            {/* Render the actual chart component here, passing its data */}
+            {data && data.length > 0 ? (
+                <ChartComponent data={data} />
+            ) : (
+                <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex-grow flex items-center justify-center">
+                    No data available for this chart.
+                </div>
+            )}
         </div>
     </div>
 );
@@ -147,19 +168,21 @@ const UsageAnalytics = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
                 {/* CHART 1: Top Selling Categories (Fulfills View 9) */}
-                <ChartPlaceholder
+                <ChartContainer
                     title="Top Selling Categories (Marketplace)"
                     icon={FaChartPie}
-                    description="Distribution of total items sold on the marketplace, providing selling insights."
-                    data={reportData.topCategories} // Data source: reportData.topCategories (from View 9)
+                    description="Distribution of total items sold on the marketplace, providing selling insights over the selected period."
+                    data={reportData.topCategories} 
+                    ChartComponent={TopCategoriesBarChart} // Use the new Bar Chart component
                 />
 
-                {/* CHART 2: General Usage Frequency (Fulfills General Proposal Goal) */}
-                <ChartPlaceholder
-                    title={`Item Usage Frequency (${timeFilter})`}
-                    icon={FaChartBar}
-                    description="General usage frequency derived from detailed wear logs across all users."
-                     // Data source: /api/usage/general-category-use
+                {/* CHART 2: Sales History (Fulfills View 6) */}
+                <ChartContainer
+                    title={`Sales Revenue History (${timeFilter})`}
+                    icon={FaDollarSign} // Changed icon for sales
+                    description="Tracking total revenue from sales over the selected time period."
+                    data={reportData.salesHistory} 
+                    ChartComponent={SalesHistoryLineChart} // Use the new Line Chart component
                 />
             </div>
 
