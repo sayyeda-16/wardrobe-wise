@@ -123,32 +123,27 @@ const SeasonalSuggestions = ({ items, onAction }) => (
 
 // --- Main Component ---
 function Wardrobe() {
-    const { user } = useAuth();
-    const navigate = useNavigate();
-    const [items, setItems] = useState([]);
-    const [filteredItems, setFilteredItems] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState('');
-    const [filters, setFilters] = useState({
-        category: '',
-        brand: '',
-        color: '',
-        condition: '',
-        lifecycle: '',
-    });
-    const [selectedItem, setSelectedItem] = useState(null);
-    const [showItemDetails, setShowItemDetails] = useState(false);
-    
-    // New states for C.8 & C.10 (Local Branch)
-    const [conditionSummary, setConditionSummary] = useState([]);
-    const [seasonalItems, setSeasonalItems] = useState([]);
-    // New state for Resell Modal (Incoming Branch)
-    const [showResellForm, setShowResellForm] = useState(false);
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [items, setItems] = useState([]);
+  const [filteredItems, setFilteredItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [filters, setFilters] = useState({
+    category: '',
+    brand: '',
+    color: '',
+    condition: '',
+    lifecycle: '',
+  });
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [showItemDetails, setShowItemDetails] = useState(false);
+  const [showResellForm, setShowResellForm] = useState(false);
 
-
-    const fetchItems = useCallback(async () => {
-        setLoading(true);
-        setError('');
+  
+ const fetchItems = useCallback(async () => {
+    setLoading(true);
+    setError('');
 
         try {
             // 1. Fetch Core Items
@@ -308,6 +303,52 @@ function Wardrobe() {
             setSelectedItem(null);
         }
     };
+    const handlePromptResell = (item) => {
+      // 1. Close the ItemDetails modal if it's open
+      handleCloseDetails(); 
+      // 2. Set the item and open the new Resell form
+      setSelectedItem(item);
+      setShowResellForm(true); // 👈 OPEN THE NEW MODAL
+  };
+
+  const handleCloseResellForm = () => {
+    setShowResellForm(false);
+    setSelectedItem(null);
+};
+
+  const handleSellItem = async (item, listPrice, descriptionText) => { // 👈 ADD NEW ARGUMENTS
+      // The price validation and conversion is now handled by the form component
+      const list_price_cents = Math.round(parseFloat(listPrice) * 100); 
+
+      try {
+          // Your backend /api/items/ endpoint handles creating the Item AND the Listing
+          // We need to use the dedicated Listing endpoint if Item creation is not needed.
+          // Since you successfully created the item via the Item endpoint in the previous step,
+          // we'll assume the separate Listing endpoint /api/listings/ is now used to *update* the item lifecycle.
+          
+          await api.post('/api/listings/', {
+              item_id: item.item_id,
+              list_price_cents: list_price_cents,
+              // 👈 Pass Title/Description to the Listing model fields
+              title: item.item_name, // Use item name as default title
+              description: descriptionText || `Listing for pre-loved ${item.item_name}.`,
+          });
+          
+          // 1. Alert user and refresh list
+          alert(`Item "${item.item_name}" successfully listed for $${listPrice}!`);
+          fetchItems(); 
+          
+          // 2. Close the resell form
+          setShowResellForm(false); // 👈 CLOSE THE RESELL FORM
+          setSelectedItem(null);
+
+      } catch (error) {
+          console.error('Error listing item:', error.response?.data || error.message);
+          alert('Failed to list item. Please check the console for details.');
+          setShowResellForm(false);
+          setSelectedItem(null);
+      }
+  };
 
     const handleDeleteItem = async (item) => {
         if (!window.confirm(`Consider re-purposing ${item.item_name || item.name} instead of deleting?`)) return;
