@@ -9,7 +9,7 @@ const HARDCODED_CATEGORIES = [
     { id: 3, name: 'Outerwear' }, 
     { id: 4, name: 'Footwear' }
 ];
-const CONDITIONS = ['New', 'Like New', 'Good', 'Fair', 'Worn'];
+const CONDITIONS = ['New', 'LikeNew', 'Good', 'Fair', 'Worn'];
 
 
 const SearchFilters = ({ categories = HARDCODED_CATEGORIES, currentFilters, onFilterChange }) => {

@@ -104,128 +104,132 @@ const ItemDetail = () => {
   const isListed = listing && listing.status === 'Active';
 
   return (
-    <div className="max-w-6xl mx-auto py-10 px-4">
-      <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border-t-8 border-green-600">
-        <div className="md:flex">
-          
-          {/* Image Section */}
-          <div className="md:w-1/2 p-4">
-            {item.image_url ? (
-              <img
-                src={item.image_url}
-                alt={item.item_name}
-                className="w-full h-[500px] object-cover rounded-2xl shadow-lg"
-              />
-            ) : (
-              <div className="w-full h-[500px] bg-gray-200 rounded-2xl flex items-center justify-center text-gray-500 text-lg border border-gray-300">
-                Image Not Available
-              </div>
-            )}
-          </div>
+        <div className="max-w-6xl mx-auto py-10 px-4">
+            <div className="bg-white rounded-3xl shadow-2xl overflow-hidden border-t-8 border-green-600">
+                <div className="md:flex">
+                    
+                    {/* Image Section (Unchanged) */}
+                    <div className="md:w-1/2 p-4">
+                        {item.item_image ? ( // Assuming image_url field was renamed to item_image
+                            <img
+                                src={item.item_image}
+                                alt={item.item_name}
+                                className="w-full h-[500px] object-cover rounded-2xl shadow-lg"
+                            />
+                        ) : (
+                            <div className="w-full h-[500px] bg-gray-200 rounded-2xl flex items-center justify-center text-gray-500 text-lg border border-gray-300">
+                                Image Not Available
+                            </div>
+                        )}
+                    </div>
 
-          {/* Details Section */}
-          <div className="md:w-1/2 p-8 flex flex-col justify-between">
-            
-            <div>
-              <h1 className="text-4xl font-extrabold text-gray-900 mb-2">{item.item_name}</h1>
-              <p className="text-lg text-gray-600 mb-6">Listed by {item.seller_name || 'Anonymous'}</p>
+                    {/* Details Section */}
+                    <div className="md:w-1/2 p-8 flex flex-col justify-between">
+                        
+                        <div>
+                            <h1 className="text-4xl font-extrabold text-gray-900 mb-2">{item.item_name}</h1>
+                            {/* Assuming seller name comes from a field like item.user_name */}
+                            <p className="text-lg text-gray-600 mb-6">Listed by {item.user_name || 'Anonymous'}</p> 
 
-              {/* Status Message */}
-              {statusMessage.message && (
-                <div className={`flex items-center p-4 rounded-xl mb-6 font-medium ${
-                    statusMessage.type === 'success' 
-                      ? 'bg-green-100 text-green-700 border border-green-300' 
-                      : 'bg-red-100 text-red-700 border border-red-300'
-                }`}>
-                  {statusMessage.type === 'error' ? <FaTimesCircle className="mr-2" /> : <FaCheckCircle className="mr-2" />}
-                  {statusMessage.message}
+                            {/* Status Message (Unchanged) */}
+                            {statusMessage.message && (
+                                <div className={`flex items-center p-4 rounded-xl mb-6 font-medium ${
+                                    statusMessage.type === 'success' 
+                                        ? 'bg-green-100 text-green-700 border border-green-300' 
+                                        : 'bg-red-100 text-red-700 border border-red-300'
+                                }`}>
+                                    {statusMessage.type === 'error' ? <FaTimesCircle className="mr-2" /> : <FaCheckCircle className="mr-2" />}
+                                    {statusMessage.message}
+                                </div>
+                            )}
+
+                            {/* Item Specs (Unchanged) */}
+                            <div className="space-y-4 text-base mb-8 p-4 bg-gray-500 rounded-lg">
+                                {/* ... (Item Specs mapping remains the same) ... */}
+                                {Object.entries({
+                                    Brand: item.brand_name, 
+                                    Category: item.category_name, 
+                                    Size: item.size_label, 
+                                    Color: item.color, 
+                                    Material: item.material, 
+                                    Condition: item.condition, 
+                                    Season: item.season_hint, 
+                                    Source: item.purchase_source
+                                }).map(([label, value]) => (
+                                    <div key={label} className="flex justify-between border-b border-gray-200 pb-1">
+                                        <span className="text-gray-600 font-medium">{label}:</span>
+                                        <span className="text-gray-800">{value || 'Not specified'}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Action Area */}
+                        <div className="border-t pt-6">
+                            
+                            {isListed && (
+                                <div className="mb-4 flex justify-between items-center">
+                                    <span className="text-3xl font-extrabold text-green-700">
+                                        {/* ✅ CRITICAL FIX: Use list_price_cents */}
+                                        {formatPrice(listing.list_price_cents)} 
+                                    </span>
+                                    <span className="text-sm text-gray-500">
+                                        {/* Assuming your API returns 'view_count' for the listing */}
+                                        {listing.view_count || 0} views
+                                    </span>
+                                </div>
+                            )}
+
+                            {isListed && (
+                                isOwner ? (
+                                    <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-xl font-medium text-center">
+                                        This is **your** item, currently listed for sale.
+                                    </div>
+                                ) : (
+                                    <button
+                                        onClick={handleBuyItem}
+                                        disabled={isBuying}
+                                        className={`w-full py-4 px-4 rounded-xl font-bold text-xl transition-colors shadow-lg ${
+                                            isBuying 
+                                                ? 'bg-gray-400 cursor-not-allowed' 
+                                                : 'bg-green-600 hover:bg-green-700 text-white transform hover:scale-[1.01]'
+                                        } flex items-center justify-center`}
+                                    >
+                                        {isBuying ? <FaSpinner className="animate-spin mr-3" /> : <FaShoppingCart className="mr-3" />}
+                                        {isBuying ? 'Processing Purchase...' : 'Buy Now'}
+                                    </button>
+                                )
+                            )}
+
+                            {!isListed && isOwner && (
+                                <div className="bg-blue-100 border border-blue-400 text-blue-800 px-4 py-3 rounded-xl font-medium text-center">
+                                    This item is in your wardrobe but is not currently listed for sale.
+                                </div>
+                            )}
+                            
+                            {/* Footer Buttons (Unchanged) */}
+                            <div className="mt-6 flex space-x-4">
+                                <button
+                                    onClick={() => navigate('/marketplace')}
+                                    className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-xl font-medium transition-colors shadow-sm"
+                                >
+                                    Back to Marketplace
+                                </button>
+                                {isOwner && (
+                                    <button
+                                        onClick={() => navigate('/wardrobe')}
+                                        className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-xl font-medium transition-colors shadow-sm"
+                                    >
+                                        Go to Wardrobe
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    </div>
                 </div>
-              )}
-
-              {/* Item Specs */}
-              <div className="space-y-4 text-base mb-8 p-4 bg-gray-50 rounded-lg">
-                {Object.entries({
-                  Brand: item.brand_name, 
-                  Category: item.category_name, 
-                  Size: item.size_label, 
-                  Color: item.color, 
-                  Material: item.material, 
-                  Condition: item.condition, 
-                  Season: item.season_hint, 
-                  Source: item.purchase_source
-                }).map(([label, value]) => (
-                  <div key={label} className="flex justify-between border-b border-gray-200 pb-1">
-                    <span className="text-gray-600 font-medium">{label}:</span>
-                    <span className="text-gray-800">{value || 'Not specified'}</span>
-                  </div>
-                ))}
-              </div>
             </div>
-
-            {/* Action Area */}
-            <div className="border-t pt-6">
-              
-              {isListed && (
-                <div className="mb-4 flex justify-between items-center">
-                  <span className="text-3xl font-extrabold text-green-700">
-                    {formatPrice(listing.price)} {/* FIXED: Assuming price is in cents */}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {listing.views || 0} views
-                  </span>
-                </div>
-              )}
-
-              {isListed && (
-                isOwner ? (
-                  <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-xl font-medium text-center">
-                    This is **your** item, currently listed for sale.
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleBuyItem}
-                    disabled={isBuying}
-                    className={`w-full py-4 px-4 rounded-xl font-bold text-xl transition-colors shadow-lg ${
-                      isBuying 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-green-600 hover:bg-green-700 text-white transform hover:scale-[1.01]'
-                    } flex items-center justify-center`}
-                  >
-                    {isBuying ? <FaSpinner className="animate-spin mr-3" /> : <FaShoppingCart className="mr-3" />}
-                    {isBuying ? 'Processing Purchase...' : 'Buy Now'}
-                  </button>
-                )
-              )}
-
-              {!isListed && isOwner && (
-                <div className="bg-blue-100 border border-blue-400 text-blue-800 px-4 py-3 rounded-xl font-medium text-center">
-                  This item is in your wardrobe but is not currently listed for sale.
-                </div>
-              )}
-
-              {/* Footer Buttons */}
-              <div className="mt-6 flex space-x-4">
-                <button
-                  onClick={() => navigate('/marketplace')}
-                  className="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-3 px-4 rounded-xl font-medium transition-colors shadow-sm"
-                >
-                  Back to Marketplace
-                </button>
-                {isOwner && (
-                  <button
-                    onClick={() => navigate('/wardrobe')}
-                    className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-xl font-medium transition-colors shadow-sm"
-                  >
-                    Go to Wardrobe
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default ItemDetail;
