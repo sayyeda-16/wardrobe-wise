@@ -9,7 +9,7 @@ import { FaTag, FaLeaf, FaRecycle, FaSeedling, FaTshirt, FaShoePrints, FaGem, Fa
 const getConditionColor = (condition) => {
   switch (condition) {
     case 'New': return 'text-emerald-600'; // Matches #10b981
-    case 'LikeNew': return 'text-green-700'; // Matches #059669
+    case 'Like New': return 'text-green-700'; // Matches #059669
     case 'Good': return 'text-amber-600'; // Matches #d97706
     case 'Fair': return 'text-red-600'; // Matches #dc2626
     default: return 'text-gray-500';
@@ -45,7 +45,7 @@ const formatPrice = (cents) => `$${(cents / 100).toFixed(2)}`;
 function ItemCard({ item, onSell, onDelete, isMarketplace = false }) { 
   
   const cardColor = getCardColor(item.item_id || item.id);
-  const isListed = item.lifecycle === 'Listed';
+  
   // Dynamic styles are handled via inline style prop using the calculated colors
   const cardStyle = {
     backgroundColor: cardColor.background,
@@ -141,18 +141,10 @@ function ItemCard({ item, onSell, onDelete, isMarketplace = false }) {
             <button 
               onClick={(e) => {
                 e.stopPropagation();
-                if (!isListed) onSell(item); // Only call onSell if not listed
+                onSell(item);
               }}
-              disabled={isListed}
-              className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition duration-200 shadow-md ${
-                isListed 
-                  ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
-                  : 'text-white hover:opacity-90 hover:-translate-y-0.5'
-              }`}
-              style={{ 
-                // Only apply accent style if not disabled
-                backgroundColor: isListed ? undefined : cardColor.accent 
-              }}
+              className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-white rounded-xl text-sm font-semibold transition duration-200 hover:opacity-90 hover:-translate-y-0.5 shadow-md"
+              style={{ backgroundColor: cardColor.accent }}
             >
               <FaRecycle className="text-sm" />
               Resell
@@ -162,15 +154,7 @@ function ItemCard({ item, onSell, onDelete, isMarketplace = false }) {
                 e.stopPropagation();
                 onDelete(item);
               }}
-              disabled={isListed}
-              className={` gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition duration-200 shadow-md ${
-              isListed 
-                ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
-                : 'bg-red-600 text-white hover:opacity-90 hover:-translate-y-0.5'
-            }`}
-
-
-              
+              className="px-3 py-2 bg-transparent text-red-600 border border-red-600 rounded-xl text-sm font-medium transition duration-200 hover:bg-red-50 hover:text-red-700 hover:-translate-y-0.5"
             >
               <FaTrash className="text-xs" />
             </button>

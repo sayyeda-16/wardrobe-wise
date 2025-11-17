@@ -13,7 +13,7 @@ function ItemDetails({ item, isOpen, onClose, onEdit, onDelete, onSell }) {
   // Destructure purchase details (which MUST now be included in the 'item' prop)
   const { 
     item_name, 
-    brand_name, 
+    brand, 
     category, 
     size_label, 
     color, 
@@ -50,7 +50,7 @@ function ItemDetails({ item, isOpen, onClose, onEdit, onDelete, onSell }) {
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 mb-4 text-sm">
             
             {/* Core Details */}
-            <div className={baseDetailClass}><strong>Brand:</strong> {brand_name}</div>
+            <div className={baseDetailClass}><strong>Brand:</strong> {brand}</div>
             <div className={baseDetailClass}><strong>Category:</strong> {category}</div>
             <div className={baseDetailClass}><strong>Size:</strong> {size_label}</div>
             <div className={baseDetailClass}><strong>Color:</strong> {color}</div>
@@ -73,7 +73,7 @@ function ItemDetails({ item, isOpen, onClose, onEdit, onDelete, onSell }) {
             </div>
             {seller_type !== 'Retail' && (
               <div className="col-span-2 text-green-700 bg-green-50 p-2 rounded-md font-medium">
-                🌱 Eco-Friendly Choice! Purchased {seller_type?.toLowerCase()}.
+                🌱 Eco-Friendly Choice! Purchased {seller_type.toLowerCase()}.
               </div>
             )}
             
