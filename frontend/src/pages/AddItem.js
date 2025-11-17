@@ -1,77 +1,132 @@
 // src/pages/AddItem.js (UPDATED STYLING)
+// src/pages/AddItem.js (UPDATED STYLING)
 import React, { useState } from 'react';
 import { FaTshirt, FaTag, FaCheckCircle, FaSpinner, FaTimesCircle, FaCamera, FaLeaf } from 'react-icons/fa';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 
+
 function AddItem() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    name: '',
+    item_name: '',
     brand: '',
     category: '',
-    size: '',
+    size_label: '',
     color: '',
-    condition: 'Good',
-    price: '',
-    image: null,
+    condition: 'New',
+    item_image: null,
+    purchase_price: '', // Input price in dollar/float format
+    seller_type: 'Retail', // Default to Retail
+    location: '',
+    purchase_date: '',
+    
+    list_for_sale: false,
+    list_price: '', 
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const categoryOptions = ['Tops', 'Bottoms', 'Dresses', 'Shoes', 'Accessories', 'Outerwear'];
-  const conditionOptions = ['New', 'Like New', 'Good', 'Fair'];
+
+  const categoryOptions = ['Tops', 'Bottoms', 'Shoes', 'Accessories', 'Outerwear'];
+  const conditionOptions = ['New', 'LikeNew', 'Good', 'Fair'];
+
 
   const handleChange = (e) => {
-    const { name, value, files } = e.target;
+    const { name, value, type, checked, files } = e.target;
     
     setFormData({
       ...formData,
-      [name]: files ? files[0] : value
+      // Use 'checked' for checkbox, 'files[0]' for file input, 'value' for others
+      [name]: 
+        type === 'checkbox' ? checked : 
+        files ? files[0] : 
+        value
     });
   };
 
-  const handleSubmit = async (e) => {
+
+ const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setLoading(true);
 
+
+    const token = localStorage.getItem('access_token');
+    if (!token) {
+      setError('You must be logged in to add an item.');
+      setLoading(false);
+      return;
+    }
+
+
     const submissionData = new FormData();
-    for (const key in formData) {
-      if (key === 'price' && formData.price) {
-        submissionData.append('list_price_cents', Math.round(parseFloat(formData.price) * 100));
-      } else if (formData[key] !== null) {
-        submissionData.append(key, formData[key]);
+   
+    // Append Item fields
+    submissionData.append('item_name', formData.item_name);
+    submissionData.append('brand', formData.brand);
+    submissionData.append('category', formData.category);
+    submissionData.append('size_label', formData.size_label);
+    submissionData.append('color', formData.color);
+    submissionData.append('condition', formData.condition);
+
+
+    if (formData.item_image) {
+      submissionData.append('item_image', formData.item_image);
+    }
+   
+   // 1. Handle Purchase Info (purchase_info: { ... })
+    // The Purchase model requires price_cents and seller_type
+    if (formData.purchase_price && parseFloat(formData.purchase_price) > 0) {
+      // Convert dollars to cents and round
+      const priceInCents = Math.round(parseFloat(formData.purchase_price) * 100);
+      
+      submissionData.append('purchase_info.price_cents', priceInCents);
+      submissionData.append('purchase_info.seller_type', formData.seller_type);
+      
+      if (formData.location) {
+        submissionData.append('purchase_info.location', formData.location);
+      }
+      if (formData.purchase_date) {
+        submissionData.append('purchase_info.purchase_date', formData.purchase_date);
       }
     }
+
+    // 2. Handle Listing Info (list_for_sale and list_price_cents)
+    submissionData.append('list_for_sale', formData.list_for_sale);
     
-    // If you were not using FormData, the JSON payload would look like this:
-    // const payload = { 
-    //     ...formData, 
-    //     list_price_cents: formData.price ? Math.round(parseFloat(formData.price) * 100) : null,
-    //     price: undefined // Remove client-side price field
-    // };
+    if (formData.list_for_sale && formData.list_price && parseFloat(formData.list_price) > 0) {
+      // Convert listing price to cents and round
+      const listPriceInCents = Math.round(parseFloat(formData.list_price) * 100);
+      submissionData.append('list_price_cents', listPriceInCents);
+    }
 
     try {
-      // API call to add the item (and optionally list it if price is included)
-      // Assuming the API endpoint handles both item creation and optional listing setup
-      await api.post('/api/items/add/', submissionData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await api.post('/api/items/', submissionData, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+        });
 
-      setSuccess(`Item "${formData.name}" successfully added to your wardrobe!`);
-      
+
+      setSuccess(`Item "${formData.item_name}" successfully added!`);
       setTimeout(() => navigate('/wardrobe'), 1500);
+
 
     } catch (apiError) {
       console.error('Error adding item:', apiError);
-      setError('Failed to add item. Please check your inputs and try again.');
+      let errorMsg = 'Failed to add item. Please try again.';
+      if (apiError.response && apiError.response.data) {
+        errorMsg = JSON.stringify(apiError.response.data);
+      }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <div style={styles.container}>
@@ -92,6 +147,7 @@ function AddItem() {
         </div>
       </div>
 
+
       {/* Main Content */}
       <div style={styles.mainContent}>
         {/* Status Messages */}
@@ -108,14 +164,15 @@ function AddItem() {
           </div>
         )}
 
+
         <form onSubmit={handleSubmit} style={styles.form}>
           {/* Item Name */}
           <div style={styles.formGroup}>
             <label style={styles.label}>Item Name *</label>
             <input
               type="text"
-              name="name"
-              value={formData.name}
+              name="item_name"
+              value={formData.item_name}
               onChange={handleChange}
               required
               disabled={loading}
@@ -123,6 +180,7 @@ function AddItem() {
               placeholder="e.g., Blue Jeans, White T-Shirt"
             />
           </div>
+
 
           {/* Brand */}
           <div style={styles.formGroup}>
@@ -137,6 +195,7 @@ function AddItem() {
               placeholder="e.g., Levi's, Nike, Zara"
             />
           </div>
+
 
           {/* Grid: Category & Size */}
           <div style={styles.grid}>
@@ -153,13 +212,12 @@ function AddItem() {
                 {categoryOptions.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
             </div>
-            
+           
             <div style={styles.formGroup}>
               <label style={styles.label}>Size</label>
               <input
-                type="text"
-                name="size"
-                value={formData.size}
+                name="size_label"
+                value={formData.size_label}
                 onChange={handleChange}
                 disabled={loading}
                 style={styles.input}
@@ -167,6 +225,7 @@ function AddItem() {
               />
             </div>
           </div>
+
 
           {/* Grid: Color & Condition */}
           <div style={styles.grid}>
@@ -183,6 +242,7 @@ function AddItem() {
               />
             </div>
 
+
             <div style={styles.formGroup}>
               <label style={styles.label}>Condition</label>
               <select
@@ -197,17 +257,84 @@ function AddItem() {
             </div>
           </div>
 
+        {/* Purchase Details Section */}
+        <h3 style={styles.sectionHeader}>Purchase Details (Optional)</h3>
+        <div style={styles.grid}>
+            {/* Purchase Price */}
+            <div style={styles.formGroup}>
+                <label style={styles.label}>Original Price (USD)</label>
+                <input
+                    type="number"
+                    name="purchase_price"
+                    value={formData.purchase_price}
+                    onChange={handleChange}
+                    disabled={loading}
+                    style={styles.input}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                />
+            </div>
+            
+            {/* Seller Type */}
+            <div style={styles.formGroup}>
+                <label style={styles.label}>Seller Type</label>
+                <select
+                    name="seller_type"
+                    value={formData.seller_type}
+                    onChange={handleChange}
+                    disabled={loading}
+                    style={styles.select}
+                >
+                    <option value="Retail">Retail</option>
+                    <option value="LocalMarket">Local Market</option>
+                    <option value="SecondHand">Second Hand</option>
+                    <option value="Gift">Gift</option>
+                </select>
+            </div>
+        </div>
+
+        <div style={styles.grid}>
+            {/* Location */}
+            <div style={styles.formGroup}>
+                <label style={styles.label}>Purchase Location</label>
+                <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    disabled={loading}
+                    style={styles.input}
+                    placeholder="e.g., Online, New York, Thrift Store"
+                />
+            </div>
+            
+            {/* Purchase Date */}
+            <div style={styles.formGroup}>
+                <label style={styles.label}>Purchase Date</label>
+                <input
+                    type="date"
+                    name="purchase_date"
+                    value={formData.purchase_date}
+                    onChange={handleChange}
+                    disabled={loading}
+                    style={styles.input}
+                />
+            </div>
+        </div>
+
+        <div style={styles.spacer}></div>
           {/* Grid: Price & Image */}
           <div style={styles.grid}>
-            <div style={styles.formGroup}>
+            {/* <div style={styles.formGroup}>
               <label style={styles.label}>
                 <FaTag style={styles.labelIcon} />
                 Price (USD) - Optional Listing
               </label>
               <input
                 type="number"
-                name="price"
-                value={formData.price}
+                name="price_cents"
+                value={formData.price_cents}
                 onChange={handleChange}
                 disabled={loading}
                 style={styles.input}
@@ -215,8 +342,8 @@ function AddItem() {
                 min="0"
                 step="0.01"
               />
-            </div>
-            
+            </div> */}
+           
             <div style={styles.formGroup}>
               <label style={styles.label}>
                 <FaCamera style={styles.labelIcon} />
@@ -224,7 +351,7 @@ function AddItem() {
               </label>
               <input
                 type="file"
-                name="image"
+                name="item_image"
                 accept="image/*"
                 onChange={handleChange}
                 disabled={loading}
@@ -232,6 +359,44 @@ function AddItem() {
               />
             </div>
           </div>
+<h3 style={styles.sectionHeader}>Sell Item Now? (Optional)</h3>
+
+{/* Listing Toggle */}
+<div style={{...styles.formGroup, ...styles.checkboxGroup}}>
+    <input
+        type="checkbox"
+        id="list_for_sale"
+        name="list_for_sale"
+        checked={formData.list_for_sale}
+        onChange={handleChange}
+        disabled={loading}
+        style={styles.checkboxInput}
+    />
+    <label htmlFor="list_for_sale" style={styles.label}>
+        <FaTag style={styles.labelIcon} /> List this item for sale immediately.
+    </label>
+</div>
+
+{/* Listing Price Input - Only visible if list_for_sale is checked */}
+{formData.list_for_sale && (
+    <div style={styles.formGroup}>
+        <label style={styles.label}>Listing Price (USD) *</label>
+        <input
+            type="number"
+            name="list_price"
+            value={formData.list_price}
+            onChange={handleChange}
+            required={formData.list_for_sale} // Price is required if listing is toggled
+            disabled={loading}
+            style={styles.input}
+            placeholder="0.00"
+            min="0"
+            step="0.01"
+        />
+    </div>
+)}
+
+<div style={styles.spacer}></div>
 
           {/* Action Buttons */}
           <div style={styles.buttonGroup}>
