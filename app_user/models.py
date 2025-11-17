@@ -40,7 +40,6 @@ class Category(models.Model):
         return self.name
 
 
-
 class Brand(models.Model):
     brand_id = models.AutoField(primary_key=True)
     name = models.CharField(max_length=80, unique=True)
@@ -82,7 +81,6 @@ class Item(models.Model):
         return self.item_name
 
 
-
 class Purchase(models.Model):
     purchase_id = models.AutoField(primary_key=True)
     item = models.OneToOneField(Item, on_delete=models.CASCADE)
@@ -98,7 +96,8 @@ class Purchase(models.Model):
 class Listing(models.Model):
     listing_id = models.AutoField(primary_key=True)  # match your table PK
     item = models.ForeignKey(Item, on_delete=models.CASCADE)
-    seller_user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+    # FIX: Added related_name='listings_sold' to resolve reverse accessor conflict
+    seller_user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='listings_sold')
     title = models.CharField(max_length=120, blank=True)
     description = models.TextField(blank=True)
     listed_on = models.DateField(auto_now_add=True)
@@ -106,6 +105,7 @@ class Listing(models.Model):
     status = models.CharField(max_length=20, default='Active')
     buyer_user = models.ForeignKey(AppUser, on_delete=models.SET_NULL, null=True, blank=True, related_name='purchases')
     view_count = models.IntegerField(default=0)
+    
     class Meta:
         db_table = "listing"
 
@@ -119,4 +119,3 @@ class Sale(models.Model):
 
     class Meta:
         db_table = "sale"
-

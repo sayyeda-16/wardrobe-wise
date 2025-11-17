@@ -1,34 +1,64 @@
 // src/pages/UserProfile.js
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FaUserCircle, FaEnvelope, FaTag, FaShoppingBag, FaChartLine, FaCog, FaLeaf, FaRecycle } from 'react-icons/fa'; // <<< FIXED: Added FaRecycle
+// <<< ADDED: FaChartPie, FaChartBar for the new visualizations
+import { FaUserCircle, FaEnvelope, FaTag, FaShoppingBag, FaChartLine, FaCog, FaLeaf, FaRecycle, FaChartPie, FaChartBar, FaGlobe } from 'react-icons/fa'; 
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
 
-
-// --- MOCK DATA FOR DEMONSTRATION ---
-const MOCK_USER_STATS = {
-    total_items: 12,
-    items_resold: 3,
-    avg_csw: 15.50, // Average Cost Per Wear (CPW), using CSW for 'Sustainable Wear'
-};
-
-const MOCK_ORDERS = [
-    { id: 'WWD-001', item: 'Sustainable Denim Jeans', date: '2025-10-25', status: 'Shipped', total: 5150 },
-    { id: 'WWD-002', item: 'Organic Cotton T-Shirt', date: '2025-11-01', status: 'Delivered', total: 3200 },
-];
-
-const MOCK_LISTINGS = [
-    { id: 'L-55', item: 'Eco-Friendly Jacket', status: 'Listed', price: 8000 },
-    { id: 'L-56', item: 'Vintage Wool Scarf', status: 'Sold', price: 2500 },
-];
-// --- END MOCK DATA ---
-
+// --- UTILITY FUNCTIONS ---
 const formatCurrency = (cents) => `$${(cents / 100).toFixed(2)}`;
 
+// Helper component for C.3: Purchase Source Breakdown
+const PurchaseSourceBreakdown = ({ data }) => (
+    <div className="bg-white p-6 rounded-xl shadow-lg">
+        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2"><FaGlobe className="text-blue-500" /> Purchase Source Summary</h2>
+        {data.length > 0 ? (
+            <ul className="space-y-3">
+                {data.map((item, index) => (
+                    <li key={item.source || index} className="flex justify-between items-center text-sm border-b pb-2">
+                        <span className="text-gray-600 font-medium">{item.source}</span>
+                        <span className="font-bold text-indigo-600">{item.count} items</span>
+                    </li>
+                ))}
+            </ul>
+        ) : (
+            <p className="text-center text-gray-500 py-4">No purchase source data recorded yet.</p>
+        )}
+    </div>
+);
+
+// Helper component for C.4: Brand Purchase Breakdown
+const BrandPurchaseBreakdown = ({ data }) => {
+    // Show only the top 5 brands
+    const topBrands = data.slice(0, 5); 
+    
+    return (
+        <div className="bg-white p-6 rounded-xl shadow-lg">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2"><FaTag className="text-purple-500" /> Top Purchased Brands</h2>
+            {topBrands.length > 0 ? (
+                <ul className="space-y-3">
+                    {topBrands.map((item, index) => (
+                        <li key={item.brand_name || index} className="flex justify-between items-center text-sm border-b pb-2">
+                            <span className="font-medium text-gray-700">
+                                {index + 1}. **{item.brand_name}** ({item.count} items)
+                            </span>
+                            <span className="font-bold text-green-600">
+                                {formatCurrency(item.total_spent)}
+                            </span>
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="text-center text-gray-500 py-4">No brand purchase data recorded yet.</p>
+            )}
+        </div>
+    );
+};
+
+
 function UserProfile() {
-    // Assuming useAuth provides a 'user' object with profile data
     const { user } = useAuth(); 
     const [activeTab, setActiveTab] = useState('dashboard');
     const profile = user || {
@@ -37,68 +67,65 @@ function UserProfile() {
         joined_date: '2024-01-01',
         bio: 'Committed to circular fashion and tracking my CPW.',
     };
-    console.log("PROFILE DATA:", profile);
 
-    
+    // <<< NEW STATES FOR VIEWS C.3 & C.4 >>>
     const [userStats, setUserStats] = useState(null);
     const [orders, setOrders] = useState([]);
     const [listings, setListings] = useState([]);
+    const [purchaseSummary, setPurchaseSummary] = useState([]); // C.3
+    const [brandSummary, setBrandSummary] = useState([]);       // C.4
+
 
     useEffect(() => {
         const fetchUserData = async () => {
+            if (!user) return;
+
             try {
-                console.log("Fetching stats for:", user);
+                // 1. Fetch Core Stats (C.1/C.6 component)
                 const statsRes = await api.get('/api/profile/stats/');
-                console.log("Stats response:", statsRes.data);
                 setUserStats(statsRes.data);
 
-                console.log("Fetching orders...");
+                // 2. Fetch Orders (C.6 raw data)
                 const ordersRes = await api.get('/api/profile/orders/');
-                console.log("Orders response:", ordersRes.data);
                 const mappedOrders = ordersRes.data.map(o => ({
                     id: o.listing_id,
                     item: o.item_name,
                     date: o.sold_on,
                     total: o.sale_price_cents,
-                    status: 'Delivered', // or map real status if available
+                    status: 'Delivered', 
                 }));
-                console.log("Mapped orders:", mappedOrders);
                 setOrders(mappedOrders);
 
-                console.log("Fetching listings...");
+                // 3. Fetch Listings (C.6 raw data)
                 const listingsRes = await api.get('/api/profile/listings/');
-                console.log("Listings response:", listingsRes.data);
                 const mappedListings = listingsRes.data.map(l => ({
                     id: l.listing_id,
                     item: l.item_name,
                     price: l.list_price_cents,
                     status: l.status === 'Active' ? 'Listed' : l.status,
                 }));
-                console.log("Mapped listings:", mappedListings);
                 setListings(mappedListings);
 
+                // 4. Fetch Purchase Source Summary (C.3) <<< NEW FETCH >>>
+                const summaryRes = await api.get('/api/profile/purchase-summary/');
+                setPurchaseSummary(summaryRes.data);
+
+                // 5. Fetch Brand Purchase Summary (C.4) <<< NEW FETCH >>>
+                const brandRes = await api.get('/api/profile/brand-summary/');
+                setBrandSummary(brandRes.data);
+
+
             } catch (error) {
-                if (error.response) {
-                    // Server responded with a status code outside 2xx
-                    console.error("API response error:", error.response.status, error.response.data);
-                } else if (error.request) {
-                    // Request was made but no response received
-                    console.error("No response received:", error.request);
-                } else {
-                    // Something else happened
-                    console.error("Error setting up request:", error.message);
-                }
+                console.error("Error fetching user data:", error.response || error.message);
+                // Optionally set mock data or an error state here
             }
 
         };
-        if (user) {
-                fetchUserData();   // Only refetch when user changes
-            }
+        fetchUserData(); 
     }, [user]);
 
 
-
-    // Helper component for stat cards
+    // Helper component for stat cards (No change)
     const StatCard = ({ icon: Icon, title, value, color }) => (
         <div className="bg-white p-6 rounded-xl shadow-md border-t-4" style={{ borderColor: color }}>
             <div className="flex justify-between items-center">
@@ -111,8 +138,7 @@ function UserProfile() {
         </div>
     );
 
-    // --- Tab Content Components ---
-
+    // --- Dashboard Tab Content (Modified to include C.3 and C.4) ---
     const DashboardTab = () => (
         <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-gray-800 border-b pb-2 mb-4 flex items-center gap-2"><FaChartLine /> Sustainability Impact</h2>
@@ -133,10 +159,18 @@ function UserProfile() {
                 <StatCard 
                     icon={FaLeaf} 
                     title="Avg. Cost/Item (CPI)" 
-                    value={formatCurrency((userStats?.avg_cpw ?? 0) * 100)}  // Displaying CPW as cents converted to currency
+                    // avg_cpw is already in dollars, multiply by 100 for formatCurrency helper
+                    value={formatCurrency((userStats?.avg_cpw ?? 0) * 100)} 
                     color="#F59E0B" 
                 />
             </div>
+
+            {/* <<< NEW ANALYTICS SECTION FOR C.3 & C.4 >>> */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+                <PurchaseSourceBreakdown data={purchaseSummary} /> {/* C.3 */}
+                <BrandPurchaseBreakdown data={brandSummary} />      {/* C.4 */}
+            </div>
+            {/* <<< END NEW ANALYTICS SECTION >>> */}
             
             {/* Quick Access to Orders & Listings */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
@@ -146,7 +180,8 @@ function UserProfile() {
         </div>
     );
 
-    const OrdersList = ({ tabTitle = "Order History", list = MOCK_ORDERS }) => (
+    // OrdersList and ListingsList components (No functional change)
+    const OrdersList = ({ tabTitle = "Order History", list = [] }) => (
         <div className="bg-white p-6 rounded-xl shadow-lg">
             <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2"><FaShoppingBag /> {tabTitle}</h2>
             <ul className="divide-y divide-gray-100">
@@ -165,15 +200,10 @@ function UserProfile() {
                     <p className="text-center text-gray-500 py-4">No orders found.</p>
                 )}
             </ul>
-            {tabTitle !== "Recent Orders" && (
-                <Link to="#" className="mt-4 block w-full text-center text-green-600 hover:text-green-700 text-sm font-medium">
-                    Load More Orders
-                </Link>
-            )}
         </div>
     );
 
-    const ListingsList = ({ tabTitle = "My Listings", list = MOCK_LISTINGS }) => (
+    const ListingsList = ({ tabTitle = "My Listings", list = [] }) => (
         <div className="bg-white p-6 rounded-xl shadow-lg">
             <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2"><FaTag /> {tabTitle}</h2>
             <ul className="divide-y divide-gray-100">
@@ -195,7 +225,7 @@ function UserProfile() {
         </div>
     );
 
-    // --- Main Component Render ---
+    // --- Main Component Render (No change) ---
     return (
         <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
             <header className="bg-white shadow-lg rounded-xl p-8 mb-8 border-t-8 border-green-500">

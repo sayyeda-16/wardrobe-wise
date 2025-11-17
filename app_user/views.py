@@ -1,33 +1,39 @@
-from django.shortcuts import render
-from rest_framework import generics
+from django.shortcuts import render, get_object_or_404
 from django.contrib.auth import get_user_model
-from .serializers import RegisterSerializer
-from .serializers import AppUserSerializer
-from .serializers import UserStatsSerializer, OrderSerializer, ListingSerializer
-from .serializers import ItemSerializer, MarketplaceListingSerializer
-from .models import User
-from rest_framework_simplejwt.views import TokenObtainPairView
+from django.db.models import Avg, Count, Sum, F
+from django.db.models.functions import TruncDay
+from django.utils import timezone
+from datetime import timedelta
+
+from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.permissions import AllowAny
-from rest_framework.permissions import IsAdminUser
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
+from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
-from rest_framework import generics, permissions
-from .models import AppUser, Item, Purchase, Listing, Sale
-from django.db.models import Avg, Count, Sum
-from datetime import timedelta
-from django.utils import timezone
-from django.db.models import Sum, Count, F
-from datetime import timedelta
-from django.db.models.functions import TruncDay
+
+from .serializers import (
+    RegisterSerializer,
+    AppUserSerializer,
+    UserStatsSerializer,
+    OrderSerializer,
+    ListingSerializer,
+    ItemSerializer,
+    MarketplaceListingSerializer,
+    PurchaseSerializer # Assuming PurchaseSerializer is still used/needed
+)
+from .models import User, AppUser, Item, Purchase, Listing, Sale, WearLog # Added WearLog based on UsageFrequency view
 
 User = get_user_model()
+
+
+# --- User Authentication and Profile Views ---
 
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
+
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
@@ -37,6 +43,7 @@ class LogoutView(APIView):
         response.delete_cookie('access_token')
         response.delete_cookie('refresh_token')
         return response
+
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
@@ -63,6 +70,7 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
         return response
 
+
 class UserProfileView(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = AppUserSerializer
@@ -70,6 +78,35 @@ class UserProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         profile, created = AppUser.objects.get_or_create(user=self.request.user)
         return profile
+
+
+class CurrentUser(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            "email": request.user.email,
+            "username": request.user.username,
+            "is_superuser": request.user.is_superuser
+        })
+
+
+class MeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "is_staff": user.is_staff,
+            "is_superuser": user.is_superuser,
+            "date_joined": user.date_joined,
+        })
+
+
+# --- User Data & Analytics Views (General) ---
 
 class UserProfileStats(APIView):
     permission_classes = [IsAuthenticated]
@@ -112,48 +149,142 @@ class UserOrders(APIView):
         serializer = OrderSerializer(orders, many=True)
         return Response(serializer.data)
 
-class UserListings(APIView):
+
+# --- Item and Listing Views ---
+
+class IsOwnerOrReadOnly(permissions.BasePermission):
+    """
+    Custom permission to only allow owners of an item to edit or delete it.
+    """
+    def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed to any request (GET)
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        
+        # Write permissions (PUT/PATCH/DELETE) are only allowed to the owner
+        # Since Item model uses 'user' field, we check against that.
+        return obj.user.user == request.user
+
+
+class ItemListCreateView(generics.ListCreateAPIView):
+    """
+    Handles: 
+    - POST (Add Item): Creates an Item (and optional Listing) linked to the user.
+    - GET (Wardrobe): Returns all items (Wardrobe + Listed) for the logged-in user.
+    """
+    serializer_class = ItemSerializer
     permission_classes = [IsAuthenticated]
 
+    # For GET: returns all items for the user (Used by Wardrobe.js)
+    def get_queryset(self):
+        user_profile = AppUser.objects.get(user=self.request.user)
+        # Use select_related for efficiency when retrieving Item data
+        return Item.objects.filter(user=user_profile).select_related('purchase', 'brand', 'category').order_by('-created_at')
+
+    # For POST: associates the new item with the current user
+    def perform_create(self, serializer):
+        user_profile = AppUser.objects.get(user=self.request.user)
+        # The 'user' field is passed to the serializer, which handles the conditional Listing creation
+        serializer.save(user=user_profile)
+
+
+class ItemRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """
+    Handles: DELETE, PUT, and GET detail view for a single item.
+    """
+    serializer_class = ItemSerializer
+    # Apply IsOwnerOrReadOnly to prevent users from editing others' items
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly] 
+    lookup_field = 'item_id'
+    
+    def get_queryset(self):
+        user_profile = AppUser.objects.get(user=self.request.user)
+        # Ensure user can only retrieve/update/delete their own items
+        return Item.objects.filter(user=user_profile)
+
+
+class UserListingsView(APIView):
+    """
+    Handles GET: Returns a list of the current user's active listings.
+    Handles POST: Creates a new Listing for an existing Item.
+    """
+    permission_classes = [IsAuthenticated]
+
+    # --- 1. GET (Existing functionality - for retrieving user's listings) ---
     def get(self, request):
         user_profile = AppUser.objects.get(user=request.user)
         
         listings = Listing.objects.filter(
             seller_user=user_profile
         ).select_related(
-            'item' # Joins Listing to Item
-        ).order_by('-listing_id')[:10]
+            'item'
+        ).order_by('-listing_id')
         
-        serializer = ListingSerializer(listings, many=True)
+        serializer = ListingSerializer(listings, many=True) 
         return Response(serializer.data)
 
-# check if user is admin or not
-class CurrentUser(APIView):
-    permission_classes = [IsAuthenticated]
+    # --- 2. POST (New functionality - for creating a Listing) ---
+    def post(self, request):
+        # 1. Prepare data for serializer
+        data = request.data.copy()
+        
+        # 2. Get the authenticated user's profile and the item
+        try:
+            user_profile = AppUser.objects.get(user=request.user)
+            item_id = data.get('item_id')
+            # Check if item exists and belongs to the user
+            item_instance = get_object_or_404(Item, item_id=item_id, user=user_profile) 
+        except AppUser.DoesNotExist:
+            return Response({"detail": "User profile not found."}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"detail": f"Error finding item: {e}"}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # 3. Add necessary context fields for the serializer
+        data['seller_user'] = user_profile.pk
+        data['item'] = item_instance.item_id # Ensure the item field is populated
+        
+        # 4. Validate and save the listing
+        serializer = ListingSerializer(data=data)
+        if serializer.is_valid():
+            # Save the listing, and automatically update the associated item's lifecycle to 'Listed'
+            listing = serializer.save(seller_user=user_profile, item=item_instance)
+            
+            # 🟢 Important: Update the Item's lifecycle status after listing is created 🟢
+            item_instance.lifecycle = 'Listed'
+            item_instance.save()
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def get(self, request):
-        return Response({
-            "email": request.user.email,
-            "username": request.user.username,
-            "is_superuser": request.user.is_superuser
-        })
 
-class MeView(APIView):
-    permission_classes = [IsAuthenticated]
+class MarketplaceListingsView(generics.ListAPIView):
+    """
+    Returns a list of all ACTIVE listings available on the marketplace.
+    Allows unauthenticated access (AllowAny).
+    """
+    serializer_class = MarketplaceListingSerializer
+    permission_classes = [AllowAny]
+    
+    # The queryset defines what data is returned
+    def get_queryset(self):
+        # 1. Filter: Only return listings that are 'Active'
+        queryset = Listing.objects.filter(status='Active')
+        
+        # 2. Optimization: Pre-fetch related data (Item, Category, Brand)
+        #    to avoid N+1 query problem, making the endpoint much faster.
+        queryset = queryset.select_related(
+            'item',
+            'item__category',
+            'item__brand'
+        )
+        
+        # 3. Ordering: Sort by newest listings first
+        return queryset.order_by('-listed_on', '-listing_id')
 
-    def get(self, request):
-        user = request.user
-        return Response({
-            "id": user.id,
-            "username": user.username,
-            "email": user.email,
-            "is_staff": user.is_staff,
-            "is_superuser": user.is_superuser,
-            "date_joined": user.date_joined,
-        })
 
+# --- Admin Analytics Views ---
 
-# view 9
 class TopSellingCategories(APIView):
     permission_classes = [IsAdminUser]
 
@@ -183,7 +314,7 @@ class TopSellingCategories(APIView):
 
         return Response(results)
 
-# view 6
+
 class SalesHistory(APIView):
     permission_classes = [IsAdminUser]
 
@@ -195,13 +326,11 @@ class SalesHistory(APIView):
         since = timezone.now().date() - timedelta(days=days)
 
         # 1. Use TruncDay to group and annotate the results by date.
-        # Although 'sold_on' is a DateField, using TruncDay ensures
-        # the database performs the grouping correctly for the aggregation.
         data = (
             Sale.objects
             .filter(sold_on__gte=since)
             # Annotate with the truncated date, aliased as 'sale_date'
-            .annotate(sale_date=TruncDay('sold_on')) 
+            .annotate(sale_date=TruncDay('sold_on'))
             # Group by the new 'sale_date' alias
             .values('sale_date')
             # Sum the revenue
@@ -212,7 +341,7 @@ class SalesHistory(APIView):
         # 2. Format the results for the frontend chart component
         results = [
             {
-                # The 'sale_date' object will be a datetime object due to TruncDay, 
+                # The 'sale_date' object will be a datetime object due to TruncDay,
                 # so we convert it to a date string.
                 "date": row['sale_date'].strftime('%Y-%m-%d') if row['sale_date'] else None,
                 "revenue": row['total_revenue_cents']
@@ -222,7 +351,7 @@ class SalesHistory(APIView):
 
         return Response(results)
 
-# view 5
+
 class TargetUserCohorts(APIView):
     permission_classes = [IsAdminUser]
 
@@ -249,7 +378,6 @@ class TargetUserCohorts(APIView):
         return Response(results)
 
 
-# view 2
 class InventoryReport(APIView):
     permission_classes = [IsAdminUser]
 
@@ -275,7 +403,7 @@ class UsageFrequency(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        # Hypothetical "WearLog" table — replace if you have different model
+        # This view assumes a model named 'WearLog' which was inferred from the original code.
         data = (
             WearLog.objects
             .values('item__category')
@@ -288,52 +416,3 @@ class UsageFrequency(APIView):
         ]
 
         return Response(results)
-
-class ItemListCreate(generics.ListCreateAPIView):
-    serializer_class = ItemSerializer
-    permission_classes = [IsAuthenticated]
-
-    # For GET: returns all items for the user (Used by Wardrobe.js)
-    def get_queryset(self):
-        user_profile = AppUser.objects.get(user=self.request.user)
-        # Use select_related to efficiently join Item and Purchase data
-        return Item.objects.filter(user=user_profile).select_related('purchase', 'brand', 'category').order_by('-created_at')
-
-    # For POST: associates the new item with the current user (Used by /add-item)
-    def perform_create(self, serializer):
-        # The serializer handles creating both Item and Purchase
-        serializer.save(user=AppUser.objects.get(user=self.request.user))
-
-class ItemRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = ItemSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'item_id'
-    
-    def get_queryset(self):
-        user_profile = AppUser.objects.get(user=self.request.user)
-        # Ensure user can only retrieve/update/delete their own items
-        return Item.objects.filter(user=user_profile)
-
-class MarketplaceListingsView(generics.ListAPIView):
-    """
-    Returns a list of all ACTIVE listings available on the marketplace.
-    Allows unauthenticated access (AllowAny).
-    """
-    serializer_class = MarketplaceListingSerializer
-    permission_classes = [AllowAny]
-    
-    # The queryset defines what data is returned
-    def get_queryset(self):
-        # 1. Filter: Only return listings that are 'Active'
-        queryset = Listing.objects.filter(status='Active')
-        
-        # 2. Optimization: Pre-fetch related data (Item, Category, Brand) 
-        #    to avoid N+1 query problem, making the endpoint much faster.
-        queryset = queryset.select_related(
-            'item', 
-            'item__category', 
-            'item__brand'
-        )
-        
-        # 3. Ordering: Sort by newest listings first
-        return queryset.order_by('-listed_on', '-listing_id')
