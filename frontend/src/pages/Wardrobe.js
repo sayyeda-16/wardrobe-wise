@@ -380,7 +380,6 @@ function Wardrobe() {
 // --- Component Styling (Enhanced Readability & Contrast for Hero Bar) ---
 
 const styles = {
-  // --- General Styles (Using THEME_COLORS for consistency) ---
   container: {
     minHeight: '100vh',
     background: `linear-gradient(135deg, ${THEME_COLORS.offWhite} 0%, ${THEME_COLORS.lightGreen} 100%)`,
@@ -413,7 +412,6 @@ const styles = {
     color: 'white',
     boxShadow: '0 10px 40px rgba(34, 51, 17, 0.4)', 
     overflow: 'hidden',
-    borderRadius: '12px', 
   },
   headerBackground: {
     position: 'absolute',
@@ -473,7 +471,6 @@ const styles = {
     backgroundColor: THEME_COLORS.lightGreen, 
     color: THEME_COLORS.darkText, 
     border: 'none',
-    borderRadius: '4px',
     fontSize: '15px',
     fontWeight: '700', 
     cursor: 'pointer',

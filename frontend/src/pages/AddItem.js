@@ -262,7 +262,7 @@ function AddItem() {
         <div style={styles.grid}>
             {/* Purchase Price */}
             <div style={styles.formGroup}>
-                <label style={styles.label}>Original Price (USD)</label>
+                <label style={styles.label}>Original Price (CAD)</label>
                 <input
                     type="number"
                     name="purchase_price"
