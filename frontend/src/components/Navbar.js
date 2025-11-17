@@ -21,7 +21,7 @@ const Navbar = () => {
 
   const navItems = [
     // MODIFIED: Renaming 'Stats' to 'Analytics' for clarity, keeping the path /stats
-    { path: '/stats', label: 'Usage Analytics', icon: FaChartBar },
+    { path: '/analytics', label: 'Usage Analytics', icon: FaChartBar, adminOnly: true },
     { path: '/wardrobe', label: 'My Wardrobe', icon: FaTshirt },
     { path: '/add-item', label: 'Add Item', icon: FaPlus },
     { path: '/marketplace', label: 'Marketplace', icon: FaStore },
@@ -50,24 +50,26 @@ const Navbar = () => {
         {/* Navigation Items */}
         {user && (
           <div style={styles.navItems}>
-            {navItems.map((item) => {
-              const IconComponent = item.icon;
-              const isActive = location.pathname === item.path;
-              return (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  style={{
-                    ...styles.navLink,
-                    ...(isActive ? styles.navLinkActive : {}),
-                  }}
-                  className="eco-nav-link"
-                >
-                  <IconComponent style={styles.navIcon} />
-                  {item.label}
-                </Link>
-              );
-            })}
+            {navItems
+              .filter(item => !item.adminOnly || (item.adminOnly && user.is_staff)) // <-- filter here
+              .map((item) => {
+                const IconComponent = item.icon;
+                const isActive = location.pathname === item.path;
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    style={{
+                      ...styles.navLink,
+                      ...(isActive ? styles.navLinkActive : {}),
+                    }}
+                    className="eco-nav-link"
+                  >
+                    <IconComponent style={styles.navIcon} />
+                    {item.label}
+                  </Link>
+                );
+              })}
           </div>
         )}
 
@@ -96,7 +98,7 @@ const Navbar = () => {
                   <FaSeedling style={styles.ecoIcon} />
                   <span style={styles.welcomeText}>Welcome,</span>
                 </div>
-                <div style={styles.userName}>{user.full_name}</div>
+                <div style={styles.userName}>{user.username}</div>
               </div>
               <button
                 onClick={logout}

@@ -47,7 +47,7 @@ const SearchFilters = ({ categories = HARDCODED_CATEGORIES, currentFilters, onFi
   };
 
   const formatPrice = (cents) => `$${(cents / 100).toFixed(2)}`;
-  const baseSelectClass = "mt-1 block w-full rounded-md border-gray-300 py-2 pl-3 pr-10 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm";
+  const baseSelectClass = "mt-1 block w-full rounded-md border-gray-300 py-2 pl-2 pr-8 text-base focus:border-indigo-500 focus:outline-none focus:ring-indigo-500 sm:text-sm w-max";
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md space-y-4">

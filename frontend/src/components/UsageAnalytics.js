@@ -1,34 +1,11 @@
 // src/components/UsageAnalytics.js
 import React, { useState, useEffect } from 'react';
 import { FaCalendarAlt, FaChartBar, FaChartPie, FaFilter, FaTable, FaUserTag, FaDollarSign } from 'react-icons/fa';
-// Assuming Axios or similar for AJAX calls
-import axios from 'axios'; 
+import api from '../api/axios'; 
+import { useAuth } from '../contexts/AuthContext';
+import SalesHistoryLineChart from '../components/SalesHistoryLineChart';
+import TopCategoriesBarChart from '../components/TopCategoriesBarChart';
 
-// --- MOCK DATA for DEMONSTRATION (WILL BE REPLACED BY API CALLS) ---
-const MOCK_REPORTS = {
-    // Data for v_top_selling_categories (View 9) - Used for Pie Chart
-    topCategories: [
-        { label: 'Tops', value: 45, color: '#00B894' },
-        { label: 'Outerwear', value: 30, color: '#0984E3' },
-        { label: 'Bottoms', value: 25, color: '#D63031' },
-    ],
-    // Data for v_item_sales_history (View 6) - Used for Audit Table
-    salesHistory: [
-        { id: 'ORD001', item: 'Denim Jacket', seller: 'UserA', buyer: 'UserB', price: 4500, date: '2025-10-20' },
-        { id: 'ORD002', item: 'Black Boots', seller: 'UserC', buyer: 'UserA', price: 8000, date: '2025-09-15' },
-        { id: 'ORD003', item: 'T-Shirt', seller: 'UserB', buyer: 'UserD', price: 1500, date: '2025-09-01' },
-    ],
-    // Data for v_retail_and_buyer_users (View 5) - Used for User Report
-    targetedUsers: [
-        { id: 101, username: 'MarketplaceMatt', retailBuys: 5, mpBuys: 12 },
-        { id: 102, username: 'SustainableSam', retailBuys: 2, mpBuys: 8 },
-    ],
-    // Data for v_active_item_counts (View 2) - Used for Inventory Report
-    inventoryReport: [
-        { id: 201, username: 'HighVolHolly', activeItems: 180, avgComparison: '+75' },
-        { id: 202, username: 'LowUseLiam', activeItems: 45, avgComparison: '-15' },
-    ]
-};
 
 // --- CHART PLACEHOLDER COMPONENT (FOR VISUALS) ---
 const ChartPlaceholder = ({ title, icon: Icon, description }) => (
@@ -40,6 +17,25 @@ const ChartPlaceholder = ({ title, icon: Icon, description }) => (
         <div className="flex-grow bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 font-semibold">
             {/* Chart Rendering Code (e.g., Chart.js) would go here */}
             [Chart Visualization Area]
+        </div>
+    </div>
+);
+
+const ChartContainer = ({ title, icon: Icon, description, data, ChartComponent }) => (
+    <div className="bg-white p-6 rounded-xl shadow-xl border border-gray-100 h-96 flex flex-col">
+        <h3 className="text-xl font-bold text-gray-800 mb-3 flex items-center">
+            <Icon className="mr-2 text-green-500" /> {title}
+        </h3>
+        <p className="text-sm text-gray-500 mb-4">{description}</p>
+        <div className="flex-grow flex items-center justify-center text-gray-400 font-semibold">
+            {/* Render the actual chart component here, passing its data */}
+            {data && data.length > 0 ? (
+                <ChartComponent data={data} />
+            ) : (
+                <div className="bg-gray-50 rounded-lg border-2 border-dashed border-gray-300 flex-grow flex items-center justify-center">
+                    No data available for this chart.
+                </div>
+            )}
         </div>
     </div>
 );
@@ -84,37 +80,62 @@ const TabularReport = ({ title, data, icon: Icon, description }) => (
 
 // --- MAIN COMPONENT ---
 const UsageAnalytics = () => {
+    const { getAuthHeaders } = useAuth();
     const [timeFilter, setTimeFilter] = useState('30days');
-    const [reportData, setReportData] = useState(MOCK_REPORTS); // Initialize with mock data
+    const [reportData, setReportData] = useState({
+        topCategories: [],
+        salesHistory: [],
+        targetedUsers: [],
+        inventoryReport: [],
+    });
+
+    const [loading, setLoading] = useState(false);
 
     // useEffect hook for fetching data on component mount or filter change
     useEffect(() => {
-        // Function to fetch data from the various endpoints
         const fetchAnalyticsData = async () => {
+            setLoading(true);
             try {
-                // Example API call for View 9: Top Selling Categories
-                const topCategoriesResponse = await axios.get('/api/marketplace/top-categories/', { params: { filter: timeFilter } });
-                
-                // Example API call for View 6: Sales History
-                const salesHistoryResponse = await axios.get('/api/marketplace/sales-history/', { params: { filter: timeFilter } });
+                const headers = getAuthHeaders();
 
-                // In a real scenario, you'd fetch data for all 4 views here
-                // For this example, we rely on MOCK_REPORTS initialized above
-                setReportData(prev => ({
-                    ...prev,
-                    topCategories: topCategoriesResponse.data,
-                    salesHistory: salesHistoryResponse.data,
-                    // The other reports (V2, V5) would likely not change with 'timeFilter'
-                }));
+                // Call all 4 endpoints
+                const [
+                    topCategoriesRes,
+                    salesHistoryRes,
+                    userCohortsRes,
+                    inventoryRes
+                ] = await Promise.all([
+                    api.get('/api/marketplace/top-categories/', { headers, params: { filter: timeFilter } }),
+                    api.get('/api/marketplace/sales-history/', { headers, params: { filter: timeFilter } }),
+                    api.get('/api/reports/user-cohorts/', { headers }),
+                    api.get('/api/reports/inventory/', { headers }),
+                ]);
+
+                // Update state with real data
+                setReportData({
+                    topCategories: topCategoriesRes.data,
+                    salesHistory: salesHistoryRes.data,
+                    targetedUsers: userCohortsRes.data,
+                    inventoryReport: inventoryRes.data,
+                });
+
+                console.log('Top Categories:', topCategoriesRes.data);
+                console.log('Sales History:', salesHistoryRes.data);
+                console.log('User Cohorts:', userCohortsRes.data);
+                console.log('Inventory:', inventoryRes.data);
 
             } catch (error) {
                 console.error("Error fetching usage analytics data:", error);
-                // Set state to handle error display in UI
+            } finally {
+                setLoading(false);
             }
         };
 
-        // fetchAnalyticsData(); // Uncomment to enable live data fetching
-    }, [timeFilter]); // Rerun fetch when timeFilter changes
+        fetchAnalyticsData();
+    }, [timeFilter, getAuthHeaders]);
+
+    if (loading) return <div className="p-8 text-center text-gray-500">Loading analytics data...</div>;
+
 
     return (
         <div className="py-8">
@@ -147,19 +168,21 @@ const UsageAnalytics = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 
                 {/* CHART 1: Top Selling Categories (Fulfills View 9) */}
-                <ChartPlaceholder
+                <ChartContainer
                     title="Top Selling Categories (Marketplace)"
                     icon={FaChartPie}
-                    description="Distribution of total items sold on the marketplace, providing selling insights."
-                    // Data source: reportData.topCategories (from View 9)
+                    description="Distribution of total items sold on the marketplace, providing selling insights over the selected period."
+                    data={reportData.topCategories} 
+                    ChartComponent={TopCategoriesBarChart} // Use the new Bar Chart component
                 />
 
-                {/* CHART 2: General Usage Frequency (Fulfills General Proposal Goal) */}
-                <ChartPlaceholder
-                    title={`Item Usage Frequency (${timeFilter})`}
-                    icon={FaChartBar}
-                    description="General usage frequency derived from detailed wear logs across all users."
-                    // Data source: /api/usage/general-category-use
+                {/* CHART 2: Sales History (Fulfills View 6) */}
+                <ChartContainer
+                    title={`Sales Revenue History (${timeFilter})`}
+                    icon={FaDollarSign} // Changed icon for sales
+                    description="Tracking total revenue from sales over the selected time period."
+                    data={reportData.salesHistory} 
+                    ChartComponent={SalesHistoryLineChart} // Use the new Line Chart component
                 />
             </div>
 

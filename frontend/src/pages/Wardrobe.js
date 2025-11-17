@@ -6,7 +6,7 @@ import { FaLeaf, FaPlus, FaRecycle, FaSeedling, FaFilter, FaSpinner, FaTshirt } 
 import ItemCard from '../components/ItemCard';
 import ItemFilters from '../components/ItemFilters';
 import ItemDetails from '../components/ItemDetails';
-import api from 'axios';
+import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 
 // --- Theme & Data Constants ---
@@ -56,30 +56,53 @@ function Wardrobe() {
     brand: '',
     color: '',
     condition: '',
-    lifecycle: 'Active',
+    lifecycle: '',
   });
   const [selectedItem, setSelectedItem] = useState(null);
   const [showItemDetails, setShowItemDetails] = useState(false);
 
-  // Data fetching logic (Unchanged)
-  const fetchItems = useCallback(async () => {
+ const fetchItems = useCallback(async () => {
     setLoading(true);
     setError('');
+
+    const apiBaseUrl = api.defaults.baseURL || 'Current Origin (If baseURL is not set)';
+    const endpoint = '/api/items/wardrobe/';
+    console.log(`-- API Debug Start --`);
+    console.log(`Attempting to fetch items from: ${apiBaseUrl}${endpoint}`);
+    console.log(`-- API Debug End --`);
+    const authHeader = api.defaults.headers.common['Authorization'];
+    console.log(`Wardrobe Fetch Token Check: ${authHeader ? 'TOKEN IS PRESENT' : 'TOKEN IS MISSING'}`);
     try {
       const response = await api.get('/api/items/wardrobe/'); 
-      setItems(response.data);
+      
+      // ✅ Map nested purchase_info fields to the root level for consistency with frontend logic
+      const mappedData = response.data.map(item => ({
+          ...item,
+          // Flattening Purchase Info: 
+          // seller_type, price_cents, and purchase_date are expected at the root level 
+          // by ItemDetails and ItemCard components.
+          seller_type: item.purchase_info?.seller_type,
+          price_cents: item.purchase_info?.price_cents,
+          purchase_date: item.purchase_info?.purchase_date,
+          // Note: brand and category are expected to be strings here, 
+          // which the backend SlugRelatedField fix should provide.
+      }));
+
+      setItems(mappedData);
+      setError(''); // Clear error if fetch is successful
     } catch (apiError) {
       console.error('Error fetching items from API. Using mock data:', apiError.message);
       setItems(MOCK_ITEMS);
-      setError('Using sustainable fashion demo data (API not available)');
+      setError('Using sustainable fashion demo data (API not available or error during fetch)');
     } finally {
       setLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    fetchItems();
-  }, [fetchItems]);
+  useEffect(() => {if (user) {
+        fetchItems();
+    }
+}, [fetchItems, user]);
 
   // Filter options logic (Unchanged)
   const filterOptions = useMemo(() => {
@@ -155,43 +178,38 @@ function Wardrobe() {
   };
 
   const handleSellItem = async (item) => {
-    const price = prompt(`Set price (USD) for ${item.item_name || item.name}:`);
-    if (!price || isNaN(price) || parseFloat(price) <= 0) return;
+      const price = prompt(`Set price (USD) for ${item.item_name || item.name}:`);
+      if (!price || isNaN(price) || parseFloat(price) <= 0) return;
 
-    try {
-      await api.post('/api/listings/', {
-        item_id: item.item_id,
-        price_cents: Math.round(parseFloat(price) * 100)
-      });
-      alert('Item successfully listed for sustainable resale!');
-      fetchItems();
-      handleCloseDetails();
-    } catch (error) {
-      console.error('Error listing item:', error);
-      alert('Item listed for circular fashion! (Mock Success)');
-      setItems(prevItems => 
-        prevItems.map(i => 
-          i.item_id === item.item_id 
-            ? { ...i, lifecycle: 'Listed' }
-            : i
-        )
-      );
-      handleCloseDetails();
-    }
-  };
+      try {
+        // ✅ Using the live API endpoint for listing creation
+        await api.post('/api/listings/', {
+          item_id: item.item_id,
+          list_price_cents: Math.round(parseFloat(price) * 100) // Note: Used list_price_cents assuming that's the field name on the Listing model
+        });
+        alert('Item successfully listed for sustainable resale! Your wardrobe view will now refresh.');
+        fetchItems(); // Refresh the list to update the lifecycle status to 'Listed'
+        handleCloseDetails();
+      } catch (error) {
+        console.error('Error listing item:', error.response?.data || error.message);
+        alert('Failed to list item. Please check the console for details.');
+        handleCloseDetails();
+      }
+    };
 
   const handleDeleteItem = async (item) => {
+    // Note: The delete endpoint is assumed to be working based on the existing route setup
     if (!window.confirm(`Consider re-purposing ${item.item_name || item.name} instead of deleting?`)) return;
 
     try {
+      // ✅ Using the live API endpoint for deletion
       await api.delete(`/api/items/${item.item_id}/`);
-      alert('Item removed sustainably');
-      fetchItems();
+      alert('Item successfully removed from wardrobe.');
+      fetchItems(); // Refresh the list
       handleCloseDetails();
     } catch (error) {
-      console.error('Error deleting item:', error);
-      setItems(prevItems => prevItems.filter(i => i.item_id !== item.item_id));
-      alert('Item removed from wardrobe (Mock Success)');
+      console.error('Error deleting item:', error.response?.data || error.message);
+      alert('Failed to remove item. Please check the console for details.');
       handleCloseDetails();
     }
   };

@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
 
+
 // --- MOCK DATA FOR DEMONSTRATION ---
 const MOCK_USER_STATS = {
     total_items: 12,
@@ -46,7 +47,7 @@ function UserProfile() {
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                console.log("Fetching stats...");
+                console.log("Fetching stats for:", user);
                 const statsRes = await api.get('/api/profile/stats/');
                 console.log("Stats response:", statsRes.data);
                 setUserStats(statsRes.data);
@@ -88,10 +89,12 @@ function UserProfile() {
                     console.error("Error setting up request:", error.message);
                 }
             }
-        };
 
-        fetchUserData();
-    }, []);
+        };
+        if (user) {
+                fetchUserData();   // Only refetch when user changes
+            }
+    }, [user]);
 
 
 
