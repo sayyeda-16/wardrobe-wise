@@ -1,24 +1,15 @@
 // src/pages/UserProfile.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { FaUserCircle, FaEnvelope, FaTag, FaShoppingBag, FaChartLine, FaCog, FaLeaf, FaRecycle } from 'react-icons/fa'; // <<< FIXED: Added FaRecycle
+import { FaUserCircle, FaEnvelope, FaTag, FaShoppingBag, FaChartLine, FaCog, FaLeaf, FaRecycle } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import api from '../api/axios';
 
-
-
 // --- MOCK DATA FOR DEMONSTRATION ---
-const MOCK_USER_STATS = {
-    total_items: 12,
-    items_resold: 3,
-    avg_csw: 15.50, // Average Cost Per Wear (CPW), using CSW for 'Sustainable Wear'
-};
-
 const MOCK_ORDERS = [
     { id: 'WWD-001', item: 'Sustainable Denim Jeans', date: '2025-10-25', status: 'Shipped', total: 5150 },
     { id: 'WWD-002', item: 'Organic Cotton T-Shirt', date: '2025-11-01', status: 'Delivered', total: 3200 },
 ];
-
 const MOCK_LISTINGS = [
     { id: 'L-55', item: 'Eco-Friendly Jacket', status: 'Listed', price: 8000 },
     { id: 'L-56', item: 'Vintage Wool Scarf', status: 'Sold', price: 2500 },
@@ -28,74 +19,92 @@ const MOCK_LISTINGS = [
 const formatCurrency = (cents) => `$${(cents / 100).toFixed(2)}`;
 
 function UserProfile() {
-    // Assuming useAuth provides a 'user' object with profile data
-    const { user } = useAuth(); 
+    const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [purchaseSummary, setPurchaseSummary] = useState([]);
+    const [summaryLoading, setSummaryLoading] = useState(true);
+
     const profile = user || {
         username: 'Eco-User',
         email: 'user@wardrobewise.com',
         joined_date: '2024-01-01',
         bio: 'Committed to circular fashion and tracking my CPW.',
     };
-    console.log("PROFILE DATA:", profile);
+    // console.log("PROFILE DATA:", profile); // Debugging
 
-    
     const [userStats, setUserStats] = useState(null);
     const [orders, setOrders] = useState([]);
     const [listings, setListings] = useState([]);
 
+    const [brandSummary, setBrandSummary] = useState([]);
+    const [brandSummaryLoading, setBrandSummaryLoading] = useState(true);
+
+    // 🟢 FETCHING LOGIC
+    const fetchPurchaseSummary = useCallback(async () => {
+        setSummaryLoading(true);
+        try {
+            const response = await api.get('/api/purchases/summary/source/');
+            setPurchaseSummary(response.data);
+        } catch (error) {
+            console.error('Error fetching purchase summary:', error);
+            setPurchaseSummary([]);
+        } finally {
+            setSummaryLoading(false);
+        }
+    }, []);
+
+    const fetchBrandSummary = useCallback(async () => {
+        setBrandSummaryLoading(true);
+        try {
+            const response = await api.get('/api/purchases/summary/brand/');
+            setBrandSummary(response.data);
+        } catch (error) {
+            console.error('Error fetching brand summary:', error);
+            setBrandSummary([]);
+        } finally {
+        setBrandSummaryLoading(false);
+        }
+    }, []);
+
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                console.log("Fetching stats for:", user);
+                // Fetch Stats
                 const statsRes = await api.get('/api/profile/stats/');
-                console.log("Stats response:", statsRes.data);
                 setUserStats(statsRes.data);
 
-                console.log("Fetching orders...");
+                // Fetch Orders
                 const ordersRes = await api.get('/api/profile/orders/');
-                console.log("Orders response:", ordersRes.data);
                 const mappedOrders = ordersRes.data.map(o => ({
                     id: o.listing_id,
                     item: o.item_name,
                     date: o.sold_on,
                     total: o.sale_price_cents,
-                    status: 'Delivered', // or map real status if available
+                    status: 'Delivered',
                 }));
-                console.log("Mapped orders:", mappedOrders);
                 setOrders(mappedOrders);
 
-                console.log("Fetching listings...");
+                // Fetch Listings
                 const listingsRes = await api.get('/api/profile/listings/');
-                console.log("Listings response:", listingsRes.data);
                 const mappedListings = listingsRes.data.map(l => ({
                     id: l.listing_id,
                     item: l.item_name,
                     price: l.list_price_cents,
                     status: l.status === 'Active' ? 'Listed' : l.status,
                 }));
-                console.log("Mapped listings:", mappedListings);
                 setListings(mappedListings);
 
             } catch (error) {
-                if (error.response) {
-                    // Server responded with a status code outside 2xx
-                    console.error("API response error:", error.response.status, error.response.data);
-                } else if (error.request) {
-                    // Request was made but no response received
-                    console.error("No response received:", error.request);
-                } else {
-                    // Something else happened
-                    console.error("Error setting up request:", error.message);
-                }
+                console.error("API fetch error in UserProfile:", error);
             }
-
         };
-        if (user) {
-                fetchUserData();   // Only refetch when user changes
-            }
-    }, [user]);
 
+        if (user) {
+            fetchUserData();
+            fetchPurchaseSummary();
+            fetchBrandSummary(); 
+        }
+    }, [user, fetchPurchaseSummary, fetchBrandSummary]);
 
 
     // Helper component for stat cards
@@ -112,39 +121,6 @@ function UserProfile() {
     );
 
     // --- Tab Content Components ---
-
-    const DashboardTab = () => (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-semibold text-gray-800 border-b pb-2 mb-4 flex items-center gap-2"><FaChartLine /> Sustainability Impact</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <StatCard 
-                    icon={FaTag} 
-                    title="Total Items" 
-                    value={userStats?.total_items ?? 0} 
-                    color="#4F46E5" 
-                />
-                <StatCard 
-                    icon={FaRecycle} 
-                    title="Items Resold/Donated" 
-                    value={userStats?.items_resold ?? 0} 
-                    color="#10B981" 
-                />
-                <StatCard 
-                    icon={FaLeaf} 
-                    title="Avg. Cost/Item (CPI)" 
-                    value={formatCurrency((userStats?.avg_cpw ?? 0) * 100)}  // Displaying CPW as cents converted to currency
-                    color="#F59E0B" 
-                />
-            </div>
-            
-            {/* Quick Access to Orders & Listings */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
-                <OrdersList tabTitle="Recent Orders" list={orders} />
-                <ListingsList tabTitle="Active Listings" list={listings.filter(l => l.status === 'Listed')} />
-            </div>
-        </div>
-    );
 
     const OrdersList = ({ tabTitle = "Order History", list = MOCK_ORDERS }) => (
         <div className="bg-white p-6 rounded-xl shadow-lg">
@@ -194,6 +170,176 @@ function UserProfile() {
             </ul>
         </div>
     );
+    
+    //  PURCHASE SUMMARY TAB COMPONENT
+    const PurchaseSummaryTab = () => {
+        const summary = purchaseSummary;
+        const loading = summaryLoading;
+
+        const containerClasses = "p-5 border border-gray-200 rounded-lg shadow-md bg-white";
+        const titleClasses = "text-xl font-semibold text-green-800 mb-4";
+        const tableClasses = "w-full border-collapse";
+        const headerClasses = "bg-green-50 font-bold text-left p-3 border-b-2 border-green-800 text-green-700";
+        const cellClasses = "p-3 border-b border-gray-200";
+
+        if (loading) {
+            return (
+                <div className={containerClasses}>
+                    <div className={titleClasses}>🛍️ Purchase Acquisition Summary</div>
+                    <div className="italic text-gray-500 p-3">
+                        Loading purchase source analysis...
+                    </div>
+                </div>
+            );
+        }
+
+        if (summary.length === 0) {
+            return (
+                <div className={containerClasses}>
+                    <div className={titleClasses}>🛍️ Purchase Acquisition Summary</div>
+                    <p className="text-gray-600">No purchase data available to summarize.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className={containerClasses}>
+                <div className={titleClasses}>🛍️ Purchase Acquisition Summary</div>
+                <table className={tableClasses}>
+                    <thead>
+                        <tr>
+                            <th className={headerClasses}>Source</th>
+                            <th className={headerClasses}>Items Count</th>
+                            <th className={headerClasses}>Total Spent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {summary.map((item, index) => (
+                            <tr
+                                key={index}
+                                className="hover:bg-gray-50 transition duration-150 ease-in-out"
+                            >
+                                <td className={cellClasses}>
+                                    <strong className="font-medium text-green-800">
+                                        {item.source}
+                                    </strong>
+                                </td>
+                                <td className={cellClasses}>{item.item_count}</td>
+                                <td className={cellClasses}>
+                                    {formatCurrency(item.total_spent_dollars * 100)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+    };
+
+    const BrandSummaryCard = () => {
+        const summary = brandSummary;
+        const loading = brandSummaryLoading;
+
+        const containerClasses =
+            "mt-5 p-5 border border-gray-200 rounded-lg shadow-md bg-white";
+        const titleClasses =
+            "text-xl font-semibold text-purple-800 mb-4";
+        const tableClasses = "w-full border-collapse";
+        const headerClasses =
+            "bg-purple-50 font-bold text-left p-3 border-b-2 border-purple-800 text-purple-700";
+        const cellClasses = "p-3 border-b border-gray-200";
+
+        if (loading) {
+            return (
+                <div className={containerClasses}>
+                    <div className={titleClasses}>💎 Spending by Brand</div>
+                    <div className="italic text-slate-500 p-4">
+                        Loading brand expenditure analysis...
+                    </div>
+                </div>
+            );
+        }
+
+        if (summary.length === 0) {
+            return (
+                <div className={containerClasses}>
+                    <div className={titleClasses}>💎 Spending by Brand</div>
+                    <p>No purchase data with brand information available.</p>
+                </div>
+            );
+        }
+
+        return (
+            <div className={containerClasses}>
+                <div className={titleClasses}>💎 Spending by Brand</div>
+                <table className={tableClasses}>
+                    <thead>
+                        <tr>
+                            <th className={headerClasses}>Brand</th>
+                            <th className={headerClasses}>Items Count</th>
+                            <th className={headerClasses}>Total Spent</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {summary.map((item, index) => (
+                            <tr
+                                key={index}
+                                className="hover:bg-gray-50 transition duration-150 ease-in-out"
+                            >
+                                <td className={cellClasses}>
+                                    <strong className="font-medium text-purple-800">
+                                        {item.brand_name}
+                                    </strong>
+                                </td>
+                                <td className={cellClasses}>{item.item_count}</td>
+                                <td className={cellClasses}>
+                                    {formatCurrency(item.total_spent_dollars * 100)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        );
+    };
+
+    const DashboardTab = () => (
+        <div className="space-y-6">
+            <h2 className="text-2xl font-semibold text-gray-800 border-b pb-2 mb-4 flex items-center gap-2"><FaChartLine /> Sustainability Impact</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <StatCard
+                    icon={FaTag}
+                    title="Total Items"
+                    value={userStats?.total_items ?? 0}
+                    color="#4F46E5"
+                />
+                <StatCard
+                    icon={FaRecycle}
+                    title="Items Resold/Donated"
+                    value={userStats?.items_resold ?? 0}
+                    color="#10B981"
+                />
+                <StatCard
+                    icon={FaLeaf}
+                    title="Avg. Cost/Item (CPI)"
+                    value={formatCurrency((userStats?.avg_cpw ?? 0) * 100)}
+                    color="#F59E0B"
+                />
+            </div>
+
+            {/* Purchase Summary and Quick Access */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+                <PurchaseSummaryTab /> 
+                <div className="space-y-6">
+                    <OrdersList tabTitle="Recent Orders" list={orders.slice(0, 3)} />
+                    <ListingsList tabTitle="Active Listings" list={listings.filter(l => l.status === 'Listed').slice(0, 3)} />
+                </div>
+                <BrandSummaryCard />
+            </div>
+        </div>
+    );
+    // ------------------------------------
 
     // --- Main Component Render ---
     return (
@@ -220,7 +366,7 @@ function UserProfile() {
                     ].map((tab) => {
                         const TabIcon = tab.icon;
                         const isCurrent = activeTab === tab.key;
-                        
+
                         if (tab.link) {
                             return (
                                 <Link
@@ -232,7 +378,7 @@ function UserProfile() {
                                 </Link>
                             );
                         }
-                        
+
                         return (
                             <button
                                 key={tab.key}

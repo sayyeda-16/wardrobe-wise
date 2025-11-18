@@ -4,7 +4,7 @@ from .serializers import RegisterSerializer
 from .serializers import AppUserSerializer
 from .serializers import UserStatsSerializer, OrderSerializer, ListingSerializer, ItemSerializer
 from .serializers import ItemSerializer, MarketplaceListingSerializer, PurchaseSerializer
-from .models import User
+from .models import User, Purchase, AppUser, Brand
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -16,13 +16,12 @@ from django.contrib.auth import authenticate
 from rest_framework import generics, permissions
 from rest_framework import status
 from .models import AppUser, Item, Purchase, Listing, Sale
-from django.db.models import Avg, Count, Sum
+from django.db.models import Avg, Count, Sum, F, Case, When, Value, CharField, IntegerField
 from datetime import timedelta
 from django.utils import timezone
-from django.db.models import Sum, Count, F
-from datetime import timedelta
 from django.db.models.functions import TruncDay
 from django.shortcuts import get_object_or_404
+from django.db.models.functions import Coalesce, Cast
 
 
 User = get_user_model()
@@ -510,3 +509,104 @@ class MarketplaceListingsView(generics.ListAPIView):
         
         # 3. Ordering: Sort by newest listings first
         return queryset.order_by('-listed_on', '-listing_id')
+
+# view 6
+class PurchaseSourceSummaryView(APIView):
+    """
+    Calculates the total spent and count of items, grouped by seller_type, 
+    for the authenticated user.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # 1. Get the current user's profile
+        try:
+            user_profile = AppUser.objects.get(user=request.user)
+        except AppUser.DoesNotExist:
+            return Response({"error": "User profile not found."}, status=404)
+        
+        # 2. Filter Purchases by the user's items and perform aggregation
+        # 'item__user' traverses the foreign key from Purchase (item_id) back to Item (user_id)
+        summary_data = Purchase.objects.filter(item__user=user_profile) \
+            .values('seller_type') \
+            .annotate(
+                # Calculate the total number of items acquired from this source
+                total_items=Count('purchase_id'),
+                # Calculate the total amount spent (in cents)
+                total_spent_cents=Sum('price_cents')
+            ) \
+            .order_by('-total_spent_cents') # Sort by highest spending source
+
+        # 3. Format the results for clarity (optional, but clean)
+        # Convert cents to dollars and structure the response
+        formatted_summary = []
+        for item in summary_data:
+            formatted_summary.append({
+                "source": item['seller_type'],
+                "item_count": item['total_items'],
+                # Convert cents to dollars (float, rounded to 2 decimal places)
+                "total_spent_dollars": round(item['total_spent_cents'] / 100.0, 2)
+            })
+            
+        return Response(formatted_summary)
+
+# view 4
+class BrandPurchaseSummaryView(APIView):
+    """
+    Calculates the total spent and item count, grouped by brand, 
+    handling NULL and empty string brand IDs by replacing them with a placeholder (0).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            user_profile = AppUser.objects.get(user=request.user)
+        except AppUser.DoesNotExist:
+            return Response({"error": "User profile not found."}, status=404)
+
+        purchases_with_brand_id = Purchase.objects.filter(item__user=user_profile).annotate(
+            # First, cast the potential brand_id (which might contain '') to CharField for safety check
+            brand_id_as_char=Cast(F('item__brand_id'), output_field=CharField()),
+        ).annotate(
+            group_brand_id=Case(
+                # If the string representation is empty or null, use 0
+                When(brand_id_as_char__isnull=True, then=Value(0)),
+                When(brand_id_as_char__exact='', then=Value(0)),
+                # Otherwise, rely on the original IntegerField value
+                default=F('item__brand_id'),
+                output_field=IntegerField()
+            )
+        )
+
+
+        # 2. Group by the assigned ID (either the real ID or 0 for unknown)
+        summary_data = purchases_with_brand_id \
+            .values('group_brand_id') \
+            .annotate(
+                total_items=Count('purchase_id'),
+                total_spent_cents=Sum('price_cents')
+            ) \
+            .order_by('-total_spent_cents')
+
+        # 3. Format the results, translating the ID back to the name
+        formatted_summary = []
+        for item in summary_data:
+            brand_id = item['group_brand_id']
+            
+            # Determine the brand name based on the ID
+            if brand_id == 0:
+                brand_name = 'Unknown Brand'
+            else:
+                try:
+                    # Look up the actual brand name using the ID from the Brand model
+                    brand_name = Brand.objects.get(pk=brand_id).name
+                except Brand.DoesNotExist:
+                    brand_name = f'Brand ID {brand_id} Error'
+            
+            formatted_summary.append({
+                "brand_name": brand_name,
+                "item_count": item['total_items'],
+                "total_spent_dollars": round(item['total_spent_cents'] / 100.0, 2)
+            })
+            
+        return Response(formatted_summary)
