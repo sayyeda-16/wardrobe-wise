@@ -58,9 +58,17 @@ class AppUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AppUser
-        fields = ['full_name', 'email', 'city', 'date_joined']
+        fields = ['full_name', 'email', 'city', 'username', 'date_joined']
 
+class UserDetailSerializer(serializers.ModelSerializer):
+    # 🟢 CRITICAL: Nest the AppUser data using the related_name 'profile'
+    profile = AppUserSerializer(read_only=True)
 
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'date_joined', 'is_staff', 'profile')
+        read_only_fields = fields
+        
 class UserStatsSerializer(serializers.Serializer):
     total_items = serializers.IntegerField()
     items_resold = serializers.IntegerField()

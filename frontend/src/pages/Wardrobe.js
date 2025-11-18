@@ -62,8 +62,32 @@ function Wardrobe() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [showItemDetails, setShowItemDetails] = useState(false);
   const [showResellForm, setShowResellForm] = useState(false);
-
-  
+const [weather, setWeather] = useState('Fetching local weather...');
+  // Example fetch call in Wardrobe.js or a custom hook
+const fetchWeather = async (city) => {
+    const apiKey = process.env.REACT_APP_OPENWEATHER_API_KEY;
+    const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&units=metric&appid=${apiKey}`;
+    
+    if (!apiKey) {
+        console.error("OpenWeatherMap API Key is missing from environment variables.");
+        setWeather("Weather API Key missing.");
+        return;
+    }
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        // Extract required data
+        const temp = Math.round(data.main.temp);
+        const description = data.weather[0].description;
+        
+        // Update state to display on page
+        setWeather(`It's currently ${temp}°C with ${description}.`);
+    } catch (error) {
+        console.error("Error fetching weather:", error);
+        setWeather("Weather data unavailable.");
+    }
+};
  const fetchItems = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -103,10 +127,16 @@ function Wardrobe() {
     }
   }, []);
 
-  useEffect(() => {if (user) {
+  useEffect(() => {
+    if (user) {
         fetchItems();
-    }
-}, [fetchItems, user]);
+        console.log(user); // Inspect this object in the console!
+        console.log(`user.city value: ${user.city}`); // Is it defined?
+        const userCity = user.city || 'New York'; 
+        
+        fetchWeather(userCity);
+        console.log(`City used for weather API: ${userCity}`);    }
+  }, [fetchItems, user]);
 
   // Filter options logic (Unchanged)
   const filterOptions = useMemo(() => {
@@ -299,6 +329,17 @@ function Wardrobe() {
           {error}
         </div>
       )}
+
+      <div style={styles.weatherWidget}>
+        <span style={styles.weatherIcon}>
+            {/* Simple logic to change icon based on description (e.g., check for 'rain' or 'cloud') */}
+            {weather.includes('sunny') || weather.includes('clear') ? '☀️' : 
+            weather.includes('cloud') ? '☁️' : 
+            weather.includes('rain') ? '🌧️' : '🌍'}
+          </span>
+          <span style={styles.weatherText}>{weather}</span>
+          <span style={styles.weatherHint}>— Hint: Consider your layers.</span>
+       </div>
 
       {/* Filters Section (Unchanged) */}
       <div style={styles.filtersContainer}>
@@ -519,7 +560,35 @@ const styles = {
     letterSpacing: '0.5px',
   },
   // --- END HERO BAR STYLES ---
-
+weatherWidget: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '12px 20px',
+        margin: '0 auto 15px auto', // Center it and give it some space
+        width: '90%', 
+        maxWidth: '1200px',
+        backgroundColor: THEME_COLORS.offWhite,
+        border: `1px solid ${THEME_COLORS.secondaryGreen}`,
+        borderRadius: '12px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+        fontSize: '1.05rem',
+        color: THEME_COLORS.darkText,
+        fontWeight: '500',
+    },
+    weatherIcon: {
+        fontSize: '1.5rem',
+        marginRight: '10px',
+    },
+    weatherText: {
+        marginRight: '15px',
+        fontWeight: '700',
+    },
+    weatherHint: {
+        fontSize: '0.9rem',
+        color: THEME_COLORS.subtleText,
+        fontStyle: 'italic',
+    },
   // --- Other Styles (Mapped to THEME_COLORS) ---
   error: {
     display: 'flex',

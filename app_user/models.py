@@ -119,8 +119,6 @@ class Item(models.Model):
     def __str__(self):
         return self.item_name
 
-
-
 class Purchase(models.Model):
     purchase_id = models.AutoField(
         primary_key=True,
@@ -141,8 +139,6 @@ class Purchase(models.Model):
 
     class Meta:
         db_table = "purchase"
-
-
 
 
 class Listing(models.Model):
@@ -175,7 +171,6 @@ class Sale(models.Model):
     buyer_user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
     sold_on = models.DateField(auto_now_add=True)
     sale_price_cents = models.IntegerField()
-
 
     class Meta:
         db_table = "sale"
