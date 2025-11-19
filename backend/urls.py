@@ -26,7 +26,15 @@ from app_user.views import TopSellingCategories, SalesHistory, TargetUserCohorts
 from app_user.views import CurrentUser
 from app_user.views import MeView
 from app_user.views import ItemListCreateView, ItemRetrieveUpdateDestroyView
-from app_user.views import MarketplaceListingsView, PurchaseSourceSummaryView, BrandPurchaseSummaryView
+from app_user.views import MarketplaceListingsView, PurchaseSourceSummaryView, BrandPurchaseSummaryView, EcoFriendlyUserAnalyticsViewSet
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(
+    r'api/analytics/eco-friendly-users', 
+    EcoFriendlyUserAnalyticsViewSet, 
+    basename='eco-friendly-users-analytics'
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -71,4 +79,4 @@ urlpatterns = [
     path('api/listings/all/', MarketplaceListingsView.as_view(), name='marketplace-list'),
     #path('api/marketplace/all/', MarketplaceListingsView.as_view(), name='marketplace-list'),
 
-]
+] + router.urls

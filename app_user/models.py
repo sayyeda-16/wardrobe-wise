@@ -176,6 +176,19 @@ class Sale(models.Model):
         db_table = "sale"
 
 
+# view 7
+class VEcoFriendlyUser(models.Model):
+    """
+    Unmanaged Model representing the v_eco_friendly_users SQL view.
+    Analyzes users' contribution to the circular economy.
+    """
+    # The columns must exactly match the view definition: user_id, full_name, eco_buys, donations
+    user_id = models.IntegerField(primary_key=True)
+    full_name = models.CharField(max_length=100)
+    eco_buys = models.BigIntegerField()  # SUM returns BigInteger in PostgreSQL
+    donations = models.BigIntegerField() # SUM returns BigInteger in PostgreSQL
 
-
+    class Meta:
+        managed = False  # Tells Django this table/view is not created/managed by migrations
+        db_table = 'v_eco_friendly_users'
 

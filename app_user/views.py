@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from .serializers import RegisterSerializer
 from .serializers import AppUserSerializer
 from .serializers import UserStatsSerializer, OrderSerializer, ListingSerializer, ItemSerializer
-from .serializers import ItemSerializer, MarketplaceListingSerializer, PurchaseSerializer
+from .serializers import ItemSerializer, MarketplaceListingSerializer, PurchaseSerializer, EcoFriendlyUserSerializer
 from .models import User, Purchase, AppUser, Brand
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
@@ -14,8 +14,8 @@ from rest_framework.permissions import IsAdminUser
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from rest_framework import generics, permissions
-from rest_framework import status
-from .models import AppUser, Item, Purchase, Listing, Sale
+from rest_framework import status, viewsets
+from .models import AppUser, Item, Purchase, Listing, Sale, VEcoFriendlyUser
 from django.db.models import Avg, Count, Sum, F, Case, When, Value, CharField, IntegerField
 from datetime import timedelta
 from django.utils import timezone
@@ -610,3 +610,13 @@ class BrandPurchaseSummaryView(APIView):
             })
             
         return Response(formatted_summary)
+
+# View 7
+class EcoFriendlyUserAnalyticsViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint for admin users to retrieve the global Eco-Friendly User analysis.
+    Only accessible by staff/admin users.
+    """
+    queryset = VEcoFriendlyUser.objects.all().order_by('-eco_buys', '-donations')
+    serializer_class = EcoFriendlyUserSerializer
+    permission_classes = [IsAdminUser] # <-- Admin restriction is here

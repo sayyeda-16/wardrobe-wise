@@ -3,7 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from .models import AppUser, Item, Purchase, Listing, Sale
-from .models import Brand, Category
+from .models import Brand, Category, VEcoFriendlyUser
 
 
 User = get_user_model()
@@ -284,3 +284,8 @@ class MarketplaceListingSerializer(serializers.ModelSerializer):
             # Add image_url if you expose it through the Listing model or a related Item field
         ]
 
+class EcoFriendlyUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VEcoFriendlyUser
+        # Expose all fields from the view
+        fields = ['user_id', 'full_name', 'eco_buys', 'donations']
