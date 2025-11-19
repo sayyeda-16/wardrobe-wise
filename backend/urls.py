@@ -25,7 +25,7 @@ from app_user.views import UserProfileStats, UserOrders, UserListingsView
 from app_user.views import TopSellingCategories, SalesHistory, TargetUserCohorts, InventoryReport, UsageFrequency
 from app_user.views import CurrentUser
 from app_user.views import MeView
-from app_user.views import ItemListCreateView, ItemRetrieveUpdateDestroyView
+from app_user.views import ItemListCreateView, ItemRetrieveUpdateDestroyView, SeasonalWardrobeSuggestionsView
 from app_user.views import MarketplaceListingsView, PurchaseSourceSummaryView, BrandPurchaseSummaryView, EcoFriendlyUserAnalyticsViewSet
 from rest_framework.routers import DefaultRouter
 
@@ -55,7 +55,8 @@ urlpatterns = [
     path('api/profile/listings/', UserListingsView.as_view(), name='profile-listings'),
     path('api/purchases/summary/source/', PurchaseSourceSummaryView.as_view(), name='purchase-source-summary'),
     path('api/purchases/summary/brand/', BrandPurchaseSummaryView.as_view(), name='purchase-brand-summary'),
-    
+    path('api/wardrobe/seasonal-suggestions/', SeasonalWardrobeSuggestionsView.as_view(), name='seasonal-suggestions'),
+
     # ADMIN ANALYTICS ENDPOINTS
     path('api/marketplace/top-categories/', TopSellingCategories.as_view(), name='top-categories'),
     path('api/marketplace/sales-history/', SalesHistory.as_view(), name='sales-history'),

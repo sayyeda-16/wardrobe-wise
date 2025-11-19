@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 // Added FaTshirt for the StatBox component
-import { FaLeaf, FaPlus, FaRecycle, FaSeedling, FaFilter, FaSpinner, FaTshirt } from 'react-icons/fa'; 
+import { FaLeaf, FaPlus, FaRecycle, FaSeedling, FaFilter, FaSpinner, FaTshirt, FaSun, FaSnowflake, FaTree } from 'react-icons/fa'; 
 import ItemCard from '../components/ItemCard';
 import ItemFilters from '../components/ItemFilters';
 import ItemDetails from '../components/ItemDetails';
@@ -44,9 +44,74 @@ const StatBox = ({ icon: Icon, value, label }) => (
   </div>
 );
 
+const SeasonalSuggestions = ({ items }) => {
+    // Determine the current season icon based on the first item's hint (if available) or the dominant hint
+    const firstItemSeason = items[0]?.season_hint || 'All';
+    const current_season_hint = items[0]?.season_hint;
+    const specific_season_items = items.filter(
+        item => item.season_hint === current_season_hint
+    );
+    const items_to_display = specific_season_items.length > 0 
+        ? specific_season_items 
+        : items.slice(0, 5); // Fallback to the top 5 prioritized items if the specific list is empty
+
+    // Determine the icon and title based on the specific season being shown
+    const season_for_display = specific_season_items.length > 0 ? current_season_hint : 'All';
+    const Icon = {
+        'Spring': FaTree,
+        'Summer': FaSun,
+        'Fall': FaTree,
+        'Winter': FaSnowflake,
+        'All': FaTshirt 
+    }[firstItemSeason] || FaTshirt;
+    
+    // Fallback if no relevant items are returned (e.g., brand new user)
+    if (!items_to_display || items_to_display.length === 0) {
+        return (
+            <div style={{...styles.suggestionsContainer, ...styles.suggestionsEmpty}}>
+                <Icon style={styles.suggestionsIcon} />
+                <p style={styles.suggestionsText}>Ready to simplify your dressing? Suggestions will appear here once you add more seasonal items.</p>
+            </div>
+        );
+    }
+    
+    // Get a title based on the first item's season hint
+    const title = season_for_display === 'All' 
+        ? 'Quick Wardrobe Access' 
+        : `Seasonal Focus: ${season_for_display} Items`;
+
+    return (
+        <div style={styles.suggestionsContainer}>
+            <div style={styles.suggestionsHeader}>
+                <Icon style={styles.suggestionsIcon} />
+                <h3 style={styles.suggestionsTitle}>{title}</h3>
+            </div>
+            <p style={styles.suggestionsSubtitle}>
+                These pieces are active in your wardrobe and relevant for the current season.
+            </p>
+            
+            {/* Horizontal Scroll Carousel */}
+            <div style={styles.suggestionsCarousel}>
+                {items_to_display.map(item => ( 
+                    <div 
+                      key={item.item_id} 
+                      style={{...styles.suggestionItem, backgroundColor: THEME_COLORS.lightGreen + '90'}}
+                      >
+                        <div style={styles.suggestionDetails}>
+                            <h4 style={styles.suggestionName}>{item.item_name}</h4>
+                            <p style={styles.suggestionBrand}>{item.brand}</p>
+                            <span style={styles.suggestionSeasonTag}>{item.season_hint}</span>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 // --- Main Component ---
 function Wardrobe() {
-  const { user } = useAuth();
+  const { user, getAuthHeaders } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
@@ -62,7 +127,9 @@ function Wardrobe() {
   const [selectedItem, setSelectedItem] = useState(null);
   const [showItemDetails, setShowItemDetails] = useState(false);
   const [showResellForm, setShowResellForm] = useState(false);
-const [weather, setWeather] = useState('Fetching local weather...');
+  const [weather, setWeather] = useState('Fetching local weather...');
+  const [suggestions, setSuggestions] = useState([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(true);
   // Example fetch call in Wardrobe.js or a custom hook
 const fetchWeather = async (city) => {
     const apiKey = process.env.REACT_APP_OPENWEATHER_API_KEY;
@@ -128,15 +195,17 @@ const fetchWeather = async (city) => {
   }, []);
 
   useEffect(() => {
-    if (user) {
-        fetchItems();
-        console.log(user); // Inspect this object in the console!
-        console.log(`user.city value: ${user.city}`); // Is it defined?
-        const userCity = user.city || 'New York'; 
-        
-        fetchWeather(userCity);
-        console.log(`City used for weather API: ${userCity}`);    }
-  }, [fetchItems, user]);
+      if (!user) return;
+
+      // Run both data fetches
+      fetchItems();
+      fetchSuggestions();
+
+      // Weather logic remains the same
+      const userCity = user.city || 'New York';
+      fetchWeather(userCity);
+      
+    }, [fetchItems, user]);
 
   // Filter options logic (Unchanged)
   const filterOptions = useMemo(() => {
@@ -258,6 +327,21 @@ const fetchWeather = async (city) => {
       }
   };
 
+  const fetchSuggestions = useCallback(async () => {
+    setLoadingSuggestions(true);
+    try {
+        const headers = getAuthHeaders();
+        const response = await api.get('/api/wardrobe/seasonal-suggestions/', { headers });
+        // The endpoint is verified to return the data structure needed by the serializer
+        setSuggestions(response.data);
+    } catch (error) {
+        console.error("Failed to fetch seasonal suggestions:", error);
+        setSuggestions([]); // Clear on error
+    } finally {
+        setLoadingSuggestions(false);
+    }
+}, [getAuthHeaders])
+
   const handleDeleteItem = async (item) => {
     // Note: The delete endpoint is assumed to be working based on the existing route setup
     if (!window.confirm(`Consider re-purposing ${item.item_name || item.name} instead of deleting?`)) return;
@@ -340,6 +424,15 @@ const fetchWeather = async (city) => {
           <span style={styles.weatherText}>{weather}</span>
           <span style={styles.weatherHint}>— Hint: Consider your layers.</span>
        </div>
+      
+      {loadingSuggestions ? (
+          <div style={styles.loadingContainer}>
+              <FaSpinner style={styles.loadingIcon} />
+              <div style={styles.loadingText}>Loading seasonal suggestions...</div>
+          </div>
+      ) : (
+          <SeasonalSuggestions items={suggestions} />
+      )}
 
       {/* Filters Section (Unchanged) */}
       <div style={styles.filtersContainer}>
@@ -560,6 +653,84 @@ const styles = {
     letterSpacing: '0.5px',
   },
   // --- END HERO BAR STYLES ---
+  suggestionsContainer: {
+        padding: '24px',
+        backgroundColor: THEME_COLORS.offWhite,
+        borderRadius: '12px',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
+        marginBottom: '40px',
+        borderLeft: `5px solid ${THEME_COLORS.primaryGreen}`,
+    },
+    suggestionsEmpty: {
+        textAlign: 'center',
+        opacity: 0.7,
+    },
+    suggestionsHeader: {
+        display: 'flex',
+        alignItems: 'center',
+        marginBottom: '10px',
+    },
+    suggestionsIcon: {
+        color: THEME_COLORS.primaryGreen,
+        fontSize: '24px',
+        marginRight: '12px',
+    },
+    suggestionsTitle: {
+        fontSize: '20px',
+        fontWeight: 'bold',
+        color: THEME_COLORS.darkText,
+    },
+    suggestionsSubtitle: {
+        color: THEME_COLORS.subtleText,
+        marginBottom: '20px',
+        fontSize: '14px',
+    },
+    suggestionsCarousel: {
+        display: 'flex',
+        overflowX: 'scroll', // Enables horizontal scrolling
+        paddingBottom: '10px',
+        gap: '16px',
+    },
+    suggestionItem: {
+        flex: '0 0 auto', // Prevents stretching
+        width: '180px',
+        borderRadius: '8px',
+        boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'transform 0.2s',
+        border: `1px solid ${THEME_COLORS.secondaryGreen}30`,
+    },
+    suggestionImage: {
+        width: '100%',
+        height: '100px',
+        objectFit: 'cover',
+    },
+    suggestionDetails: {
+        padding: '10px',
+    },
+    suggestionName: {
+        fontSize: '14px',
+        fontWeight: '600',
+        color: THEME_COLORS.darkText,
+        whiteSpace: 'nowrap',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+    },
+    suggestionBrand: {
+        fontSize: '12px',
+        color: THEME_COLORS.subtleText,
+        marginTop: '2px',
+    },
+    suggestionSeasonTag: {
+        display: 'inline-block',
+        fontSize: '11px',
+        marginTop: '8px',
+        padding: '2px 6px',
+        borderRadius: '10px',
+        backgroundColor: THEME_COLORS.primaryGreen + '40',
+        color: THEME_COLORS.darkText,
+    },
 weatherWidget: {
         display: 'flex',
         alignItems: 'center',

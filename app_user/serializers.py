@@ -140,14 +140,13 @@ class ItemSerializer(serializers.ModelSerializer):
     # 6. Image Upload
     item_image = serializers.ImageField(use_url=True, required=False, allow_null=True)
 
-
     class Meta:
         model = Item
         fields = [
             'item_id', 'item_name', 'brand', 'brand_name_input', 'category', 'size_label',
             'color', 'condition', 'material', 'lifecycle',
             'item_image', 'purchase_info', # Item fields
-            'list_for_sale', 'list_price_cents' # Non-model fields for creation
+            'list_for_sale', 'list_price_cents', 'season_hint' # Non-model fields for creation
         ]
         read_only_fields = ['user', 'item_id', 'lifecycle']
 

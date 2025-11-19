@@ -22,9 +22,21 @@ from django.utils import timezone
 from django.db.models.functions import TruncDay
 from django.shortcuts import get_object_or_404
 from django.db.models.functions import Coalesce, Cast
-
+from datetime import date 
 
 User = get_user_model()
+
+def get_current_season():
+    """Determines the current season based on the date (simplified for Northern Hemisphere)."""
+    month = date.today().month
+    if 3 <= month <= 5:
+        return 'Spring'
+    elif 6 <= month <= 8:
+        return 'Summer'
+    elif 9 <= month <= 11:
+        return 'Fall'
+    else: # 12, 1, 2
+        return 'Winter'
 
 
 class RegisterView(generics.CreateAPIView):
@@ -199,7 +211,6 @@ class CurrentUser(APIView):
             "is_superuser": request.user.is_superuser
         })
 
-
 class MeView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -215,24 +226,16 @@ class MeView(APIView):
             "date_joined": user.date_joined,
         })
 
-
-
-
 # view 9
 class TopSellingCategories(APIView):
     permission_classes = [IsAdminUser]
 
-
     def get(self, request):
-
-
         filter_value = request.GET.get('filter', '30days')
         days_map = {'7days': 7, '30days': 30, 'year': 365}
         days = days_map.get(filter_value, 30)
 
-
         since = timezone.now().date() - timedelta(days=days)
-
 
         data = (
             Sale.objects
@@ -242,7 +245,6 @@ class TopSellingCategories(APIView):
             .order_by('-total')
         )
 
-
         results = [
             {
                 "label": row['listing__item__category__name'],
@@ -250,8 +252,6 @@ class TopSellingCategories(APIView):
             }
             for row in data
         ]
-
-
         return Response(results)
 
 
@@ -304,14 +304,9 @@ class SalesHistory(APIView):
 class TargetUserCohorts(APIView):
     permission_classes = [IsAdminUser]
 
-
     def get(self, request):
         users = AppUser.objects.all()
-
-
         results = []
-
-
         for u in users:
             # All items this user purchased from retail (Purchase table)
             retail_buys = Purchase.objects.filter(item__user=u).count()
@@ -331,9 +326,6 @@ class TargetUserCohorts(APIView):
 
 
         return Response(results)
-
-
-
 
 # view 2
 class InventoryReport(APIView):
@@ -359,8 +351,6 @@ class InventoryReport(APIView):
 
 
         return Response(results)
-
-
 
 
 class UsageFrequency(APIView):
@@ -619,4 +609,55 @@ class EcoFriendlyUserAnalyticsViewSet(viewsets.ReadOnlyModelViewSet):
     """
     queryset = VEcoFriendlyUser.objects.all().order_by('-eco_buys', '-donations')
     serializer_class = EcoFriendlyUserSerializer
-    permission_classes = [IsAdminUser] # <-- Admin restriction is here
+    permission_classes = [IsAdminUser] 
+
+# view 10
+class SeasonalWardrobeSuggestionsView(generics.ListAPIView):
+    """
+    Provides a personalized list of items (Active lifecycle) matching the
+    current season for the authenticated user's wardrobe page.
+    """
+    serializer_class = ItemSerializer # Assuming a serializer for the Item model exists
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # 1. Get the authenticated user (likely the Auth model instance)
+        authenticated_user = self.request.user
+        current_season = get_current_season()
+        
+        try:
+            # 🎯 CRITICAL FIX: Look up the AppUser instance 
+            # We assume your Item model's FK points to the AppUser model.
+            # Look up AppUser using a unique identifier from the authenticated user object.
+            # If your AppUser uses 'email' as the unique field:
+            app_user_instance = AppUser.objects.get(email=authenticated_user.email)
+            
+            # OR, if AppUser's PK is the same as the authenticated user's PK:
+            # app_user_instance = AppUser.objects.get(pk=authenticated_user.pk)
+            
+        except AppUser.DoesNotExist:
+            # If the user is authenticated but the corresponding AppUser profile doesn't exist
+            # This should ideally not happen, but it's a good safeguard.
+            return Item.objects.none()
+
+        # Define the Priority Logic using Case/When (remains the same)
+        priority_order = Case(
+            When(season_hint=current_season, then=Value(1)),
+            When(season_hint='All', then=Value(2)),
+            default=Value(3),
+            output_field=IntegerField(),
+        )
+
+        # 2. Use the correct AppUser instance in the filter
+        queryset = Item.objects.filter(
+            # 🎯 Use the retrieved AppUser instance for the ForeignKey filter
+            user=app_user_instance, 
+            lifecycle='Active'
+        ).annotate(
+            priority=priority_order
+        ).order_by(
+            'priority', 
+            '-item_id'
+        )[:15] 
+
+        return list(queryset)
