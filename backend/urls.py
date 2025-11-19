@@ -25,8 +25,17 @@ from app_user.views import UserProfileStats, UserOrders, UserListings
 from app_user.views import TopSellingCategories, SalesHistory, TargetUserCohorts, InventoryReport, UsageFrequency
 from app_user.views import CurrentUser
 from app_user.views import MeView
-from app_user.views import ItemListCreate, ItemRetrieveUpdateDestroy, UserListings
-from app_user.views import MarketplaceListingsView
+from app_user.views import ItemListCreateView, ItemRetrieveUpdateDestroyView, SeasonalWardrobeSuggestionsView, ItemConditionSummaryView
+from app_user.views import MarketplaceListingsView, PurchaseSourceSummaryView, BrandPurchaseSummaryView, EcoFriendlyUserAnalyticsViewSet
+from rest_framework.routers import DefaultRouter
+
+router = DefaultRouter()
+router.register(
+    r'api/analytics/eco-friendly-users', 
+    EcoFriendlyUserAnalyticsViewSet, 
+    basename='eco-friendly-users-analytics'
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
@@ -43,9 +52,13 @@ urlpatterns = [
     path('api/user/', UserProfileView.as_view(), name='user'),
     path('api/profile/stats/', UserProfileStats.as_view(), name='profile-stats'),
     path('api/profile/orders/', UserOrders.as_view(), name='profile-orders'),
-    path('api/profile/listings/', UserListings.as_view(), name='profile-listings'),
+    path('api/profile/listings/', UserListingsView.as_view(), name='profile-listings'),
+    path('api/purchases/summary/source/', PurchaseSourceSummaryView.as_view(), name='purchase-source-summary'),
+    path('api/purchases/summary/brand/', BrandPurchaseSummaryView.as_view(), name='purchase-brand-summary'),
+    path('api/wardrobe/seasonal-suggestions/', SeasonalWardrobeSuggestionsView.as_view(), name='seasonal-suggestions'),
+    path('api/wardrobe/condition-summary/', ItemConditionSummaryView.as_view(), name='condition-summary'),
 
-    # ANALYTICS ENDPOINTS
+    # ADMIN ANALYTICS ENDPOINTS
     path('api/marketplace/top-categories/', TopSellingCategories.as_view(), name='top-categories'),
     path('api/marketplace/sales-history/', SalesHistory.as_view(), name='sales-history'),
     path('api/reports/user-cohorts/', TargetUserCohorts.as_view(), name='user-cohorts'),
@@ -66,5 +79,6 @@ urlpatterns = [
 
     # marketplace
     path('api/listings/all/', MarketplaceListingsView.as_view(), name='marketplace-list'),
-    path('api/marketplace/all/', MarketplaceListingsView.as_view(), name='marketplace-list'),
-]
+    #path('api/marketplace/all/', MarketplaceListingsView.as_view(), name='marketplace-list'),
+
+] + router.urls

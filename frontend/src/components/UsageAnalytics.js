@@ -1,6 +1,6 @@
 // src/components/UsageAnalytics.js
 import React, { useState, useEffect } from 'react';
-import { FaCalendarAlt, FaChartBar, FaChartPie, FaFilter, FaTable, FaUserTag, FaDollarSign } from 'react-icons/fa';
+import { FaCalendarAlt, FaChartBar, FaChartPie, FaFilter, FaTable, FaUserTag, FaDollarSign, FaLeaf } from 'react-icons/fa';
 import api from '../api/axios'; 
 import { useAuth } from '../contexts/AuthContext';
 import SalesHistoryLineChart from '../components/SalesHistoryLineChart';
@@ -87,6 +87,7 @@ const UsageAnalytics = () => {
         salesHistory: [],
         targetedUsers: [],
         inventoryReport: [],
+        ecoFriendlyUsers: [],
     });
 
     const [loading, setLoading] = useState(false);
@@ -98,17 +99,19 @@ const UsageAnalytics = () => {
             try {
                 const headers = getAuthHeaders();
 
-                // Call all 4 endpoints
+                // Call all 5 endpoints
                 const [
                     topCategoriesRes,
                     salesHistoryRes,
                     userCohortsRes,
-                    inventoryRes
+                    inventoryRes,
+                    ecoUsersRes
                 ] = await Promise.all([
                     api.get('/api/marketplace/top-categories/', { headers, params: { filter: timeFilter } }),
                     api.get('/api/marketplace/sales-history/', { headers, params: { filter: timeFilter } }),
                     api.get('/api/reports/user-cohorts/', { headers }),
                     api.get('/api/reports/inventory/', { headers }),
+                    api.get('/api/analytics/eco-friendly-users', { headers }),
                 ]);
 
                 // Update state with real data
@@ -117,12 +120,14 @@ const UsageAnalytics = () => {
                     salesHistory: salesHistoryRes.data,
                     targetedUsers: userCohortsRes.data,
                     inventoryReport: inventoryRes.data,
+                    ecoFriendlyUsers: ecoUsersRes.data,
                 });
 
                 console.log('Top Categories:', topCategoriesRes.data);
                 console.log('Sales History:', salesHistoryRes.data);
                 console.log('User Cohorts:', userCohortsRes.data);
                 console.log('Inventory:', inventoryRes.data);
+                console.log('Eco-Friendly Users:', ecoUsersRes.data);
 
             } catch (error) {
                 console.error("Error fetching usage analytics data:", error);
@@ -211,6 +216,13 @@ const UsageAnalytics = () => {
                 icon={FaDollarSign}
                 description="Users whose active item count is significantly above the platform average."
                 data={reportData.inventoryReport}
+            />
+
+            <TabularReport
+                title="Eco-Friendly User Leaderboard"
+                icon={FaLeaf} 
+                description="Ranks users based on items acquired second-hand/local (eco_buys) and items donated (donations)."
+                data={reportData.ecoFriendlyUsers}
             />
             
         </div>

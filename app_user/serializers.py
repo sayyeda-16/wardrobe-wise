@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from .models import AppUser, Item, Purchase, Listing, Sale
+from .models import Brand, Category, VEcoFriendlyUser
 from .models import Item, Brand, Category, Purchase 
 
 User = get_user_model()
@@ -47,8 +48,17 @@ class AppUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AppUser
-        fields = ['full_name', 'email', 'city', 'date_joined']
+        fields = ['full_name', 'email', 'city', 'username', 'date_joined']
 
+class UserDetailSerializer(serializers.ModelSerializer):
+    # 🟢 CRITICAL: Nest the AppUser data using the related_name 'profile'
+    profile = AppUserSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'date_joined', 'is_staff', 'profile')
+        read_only_fields = fields
+        
 class UserStatsSerializer(serializers.Serializer):
     total_items = serializers.IntegerField()
     items_resold = serializers.IntegerField()
@@ -89,17 +99,27 @@ class ItemSerializer(serializers.ModelSerializer):
         slug_field='name', # Use the 'name' field from the Category model
         queryset=Category.objects.all()
     )
+   
+    # 3. Purchase Info (Using your approach: nested input/output)
+    purchase_info = PurchaseSerializer(source='purchase', required=False, allow_null=True)
+   
+    # 4. NEW: Marketplace Toggle (Non-model field)
+    list_for_sale = serializers.BooleanField(write_only=True, required=False, default=False)
+   
+    # 5. NEW: Listing Price (Non-model field, required if list_for_sale=True)
+    list_price_cents = serializers.IntegerField(write_only=True, required=False)
+   
+    # 6. Image Upload
+    item_image = serializers.ImageField(use_url=True, required=False, allow_null=True)
 
-    # This field handles the 1:1 relationship
-    purchase_info = PurchaseSerializer(source='purchase', required=False) 
-    
     class Meta:
         model = Item
         # Include all fields the frontend uses, plus the nested purchase data
         fields = [
-            'item_id', 'item_name', 'brand', 'category', 'size_label', 
-            'color', 'condition', 'material', 'lifecycle', 'image_url', 
-            'purchase_info' # This will output the purchase fields nested
+            'item_id', 'item_name', 'brand', 'brand_name_input', 'category', 'size_label',
+            'color', 'condition', 'material', 'lifecycle',
+            'item_image', 'purchase_info', # Item fields
+            'list_for_sale', 'list_price_cents', 'season_hint' # Non-model fields for creation
         ]
         read_only_fields = ['user']
 
@@ -150,3 +170,9 @@ class MarketplaceListingSerializer(serializers.ModelSerializer):
             'size_label',
             # Add image_url if you expose it through the Listing model or a related Item field
         ]
+
+class EcoFriendlyUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VEcoFriendlyUser
+        # Expose all fields from the view
+        fields = ['user_id', 'full_name', 'eco_buys', 'donations']
