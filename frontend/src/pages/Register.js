@@ -1,8 +1,8 @@
-// src/pages/Register.js (UPDATED STYLING ONLY)
+// src/pages/Register.js (UPDATED CODE)
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../api/auth";
-import { FaUser, FaEnvelope, FaLock, FaCheckCircle, FaSpinner, FaTimesCircle, FaLeaf } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaLock, FaCheckCircle, FaSpinner, FaTimesCircle } from 'react-icons/fa';
 
 function Register({ onRegister, onSwitchToLogin }) {
   const [formData, setFormData] = useState({
@@ -17,23 +17,24 @@ function Register({ onRegister, onSwitchToLogin }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  // const [success, setSuccess] = useState(''); // see if this should be deleted
 
   const formatErrors = (errors) => {
-    if (!errors || typeof errors !== "object") return "Registration failed.";
+  if (!errors || typeof errors !== "object") return "Registration failed.";
 
-    let messages = [];
+  let messages = [];
 
-    for (let field in errors) {
-      const fieldErrors = errors[field];
-      if (Array.isArray(fieldErrors)) {
-        fieldErrors.forEach(msg => {
-          messages.push(`${field.charAt(0).toUpperCase() + field.slice(1)}: ${msg}`);
-        });
-      }
+  for (let field in errors) {
+    const fieldErrors = errors[field];
+    if (Array.isArray(fieldErrors)) {
+      fieldErrors.forEach(msg => {
+        messages.push(`${field.charAt(0).toUpperCase() + field.slice(1)}: ${msg}`);
+      });
     }
+  }
 
-    return messages.join("\n");
-  };
+  return messages.join("\n");
+};
 
   const handleChange = (e) => {
     setFormData({
@@ -45,6 +46,7 @@ function Register({ onRegister, onSwitchToLogin }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(''); 
+    //setSuccess(''); // see whether to delete
 
     if (formData.password !== formData.confirmPassword) {
       setError("Passwords don't match. Please verify them.");
@@ -73,367 +75,176 @@ function Register({ onRegister, onSwitchToLogin }) {
     setLoading(false);
   };
 
-  // Theme colors matching the navbar and wardrobe
-  const THEME_COLORS = {
-    primaryGreen: '#6b8e23',
-    secondaryGreen: '#8ea67c',
-    lightGreen: '#e8f4d3',
-    offWhite: '#f0f7e6',
-    darkText: '#3c5a17',
-    subtleText: '#556b2f',
-  };
-
-  const styles = {
-    container: {
-      height: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '0',
-      background: `linear-gradient(rgba(199, 238, 172, 0.3), rgba(199, 238, 172, 0.3))`,
-      position: 'relative',
-      overflow: 'hidden',
-    },
-    backgroundOverlay: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundImage: `linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), url("https://aratamete.com/cdn/shop/articles/image2_4af4ee86-b4fc-46fa-ae44-95bd04652781.jpg?v=1742282629&width=640")`,
-      backgroundSize: 'cover',
-      backgroundPosition: 'center',
-      opacity: 0.4,
-    },
-    formContainer: {
-      width: '90%',
-      maxWidth: '500px',
-      backgroundColor: 'transparent',
-      position: 'relative',
-      zIndex: 2,
-      border: 'none',
-    },
-    header: {
-      textAlign: 'center',
-      marginBottom: '30px',
-    },
-    logo: {
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: '15px',
-    },
-    logoIcon: {
-      fontSize: '32px',
-      marginRight: '12px',
-      color: 'white',
-    },
-    logoText: {
-      fontSize: '28px',
-      fontWeight: '700',
-      color: 'white',
-    },
-    title: {
-      fontSize: '24px',
-      fontWeight: '600',
-      color: 'white',
-      margin: '0 0 8px 0',
-    },
-    subtitle: {
-      fontSize: '14px',
-      color: THEME_COLORS.lightGreen,
-      margin: 0,
-    },
-    formBox: {
-      backgroundColor: 'rgba(255, 255, 255, 0.2)',
-      padding: '30px',
-      boxShadow: '0 10px 40px rgba(34, 51, 17, 0.3)',
-    },
-    errorContainer: {
-      display: 'flex',
-      alignItems: 'center',
-      padding: '12px 16px',
-      backgroundColor: '#fee',
-      color: '#c33',
-      marginBottom: '20px',
-      fontSize: '14px',
-      border: '1px solid #fcc',
-    },
-    form: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '15px',
-    },
-    inputRow: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 1fr',
-      gap: '15px',
-    },
-    inputGroup: {
-      display: 'flex',
-      flexDirection: 'column',
-    },
-    label: {
-      display: 'flex',
-      alignItems: 'center',
-      fontSize: '12px',
-      fontWeight: '600',
-      color: THEME_COLORS.darkText,
-      marginBottom: '5px',
-    },
-    labelIcon: {
-      marginRight: '6px',
-      fontSize: '12px',
-      color: THEME_COLORS.primaryGreen,
-    },
-    input: {
-      width: '100%',
-      padding: '10px 12px',
-      border: `2px solid ${THEME_COLORS.secondaryGreen}`,
-      fontSize: '14px',
-      backgroundColor: THEME_COLORS.offWhite,
-      transition: 'all 0.3s ease',
-      outline: 'none',
-    },
-    submitButton: {
-      width: '100%',
-      padding: '12px',
-      backgroundColor: THEME_COLORS.primaryGreen,
-      color: 'white',
-      border: 'none',
-      fontSize: '15px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '8px',
-      transition: 'all 0.3s ease',
-      marginTop: '10px',
-    },
-    submitButtonDisabled: {
-      backgroundColor: '#ccc',
-      cursor: 'not-allowed',
-    },
-    switchContainer: {
-      textAlign: 'center',
-      paddingTop: '15px',
-      borderTop: `1px solid ${THEME_COLORS.lightGreen}`,
-      marginTop: '15px',
-    },
-    switchText: {
-      fontSize: '13px',
-      color: THEME_COLORS.subtleText,
-      marginBottom: '5px',
-    },
-    switchButton: {
-      background: 'none',
-      border: 'none',
-      color: THEME_COLORS.primaryGreen,
-      fontSize: '13px',
-      fontWeight: '600',
-      cursor: 'pointer',
-      textDecoration: 'underline',
-      transition: 'color 0.3s ease',
-    },
-  };
-
   return (
-    <div style={styles.container}>
-      {/* Background Overlay */}
-      <div style={styles.backgroundOverlay}></div>
+    <div className="min-h-screen flex items-center justify-center p-5 bg-gradient-to-br from-green-700 via-green-800 to-green-900 relative overflow-hidden">
+      
+      {/* Background gradients for texture */}
+      <div className="absolute inset-0 bg-repeat opacity-5" style={{ 
+          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='10' fill='%23ffffff' opacity='0.05'/%3E%3C/svg%3E")` 
+      }}></div>
 
-      {/* Single Transparent Container */}
-      <div style={styles.formContainer}>
-        {/* Header */}
-        <div style={styles.header}>
-          <div style={styles.logo}>
-            <FaLeaf style={styles.logoIcon} />
-            <span style={styles.logoText}>WardrobeWise</span>
-          </div>
-          <h2 style={styles.title}>Join Sustainable Community</h2>
-          <p style={styles.subtitle}>Create your account and start your eco-fashion journey</p>
-        </div>
+      {/* Main Form Card */}
+      <div className="w-full max-w-md bg-white rounded-3xl p-10 shadow-2xl relative z-10 border-t-8 border-green-600">
+        <h2 className="text-3xl font-extrabold text-gray-900 mb-2 text-center">Create Sustainable Account</h2>
+        <p className="text-center text-lg text-green-600 mb-8">Join the circular fashion movement</p>
         
-        {/* Form Box */}
-        <div style={styles.formBox}>
-          {/* Error Message */}
-          {error && (
-            <div style={styles.errorContainer}>
-              <FaTimesCircle style={{ marginRight: '8px', flexShrink: 0 }} />
-              {error}
+        {/* Status Messages */}
+        {error && (
+            <div className="flex items-center p-4 bg-red-100 text-red-700 rounded-xl mb-6 text-sm border border-red-300">
+                <FaTimesCircle className="mr-2 flex-shrink-0" />
+                {error}
             </div>
-          )}
-
-          <form onSubmit={handleSubmit} style={styles.form}>
-            {/* First Row - Full Name & Email */}
-            <div style={styles.inputRow}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>
-                  <FaUser style={styles.labelIcon} />
-                  Full Name *
-                </label>
-                <input
-                  type="text"
-                  name="full_name"
-                  value={formData.full_name}
-                  onChange={handleChange}
-                  required
-                  style={styles.input}
-                  placeholder="Full name"
-                  onFocus={(e) => e.target.style.borderColor = THEME_COLORS.primaryGreen}
-                  onBlur={(e) => e.target.style.borderColor = THEME_COLORS.secondaryGreen}
-                />
-              </div>
-
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>
-                  <FaEnvelope style={styles.labelIcon} />
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  style={styles.input}
-                  placeholder="Email address"
-                  onFocus={(e) => e.target.style.borderColor = THEME_COLORS.primaryGreen}
-                  onBlur={(e) => e.target.style.borderColor = THEME_COLORS.secondaryGreen}
-                />
-              </div>
+        )}
+        {/*success && (
+            <div className="flex items-center p-4 bg-green-100 text-green-700 rounded-xl mb-6 text-sm border border-green-300">
+                <FaCheckCircle className="mr-2 flex-shrink-0" />
+                {success}
             </div>
+        ) */}
 
-            {/* Second Row - City & Username */}
-            <div style={styles.inputRow}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>
-                  <FaUser style={styles.labelIcon} />
-                  City *
-                </label>
-                <input
-                  type="text"
-                  name="city"
-                  value={formData.city}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  style={styles.input}
-                  placeholder="Your city"
-                  onFocus={(e) => e.target.style.borderColor = THEME_COLORS.primaryGreen}
-                  onBlur={(e) => e.target.style.borderColor = THEME_COLORS.secondaryGreen}
-                />
-              </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          
+          {/* Full Name Input */}
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+              <FaUser className="mr-2 text-green-600 text-sm" />
+              Full Name *
+            </label>
+            <input
+              type="text"
+              name="full_name"
+              value={formData.full_name}
+              onChange={handleChange}
+              required
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
+              placeholder="Enter your name"
+            />
+          </div>
 
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>
-                  <FaUser style={styles.labelIcon} />
-                  Username *
-                </label>
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  style={styles.input}
-                  placeholder="Username"
-                  onFocus={(e) => e.target.style.borderColor = THEME_COLORS.primaryGreen}
-                  onBlur={(e) => e.target.style.borderColor = THEME_COLORS.secondaryGreen}
-                />
-              </div>
-            </div>
-
-            {/* Third Row - Passwords */}
-            <div style={styles.inputRow}>
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>
-                  <FaLock style={styles.labelIcon} />
-                  Password *
-                </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  style={styles.input}
-                  placeholder="Password"
-                  onFocus={(e) => e.target.style.borderColor = THEME_COLORS.primaryGreen}
-                  onBlur={(e) => e.target.style.borderColor = THEME_COLORS.secondaryGreen}
-                />
-              </div>
-
-              <div style={styles.inputGroup}>
-                <label style={styles.label}>
-                  <FaLock style={styles.labelIcon} />
-                  Confirm Password *
-                </label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  disabled={loading}
-                  style={styles.input}
-                  placeholder="Confirm password"
-                  onFocus={(e) => e.target.style.borderColor = THEME_COLORS.primaryGreen}
-                  onBlur={(e) => e.target.style.borderColor = THEME_COLORS.secondaryGreen}
-                />
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
+          {/* Email Input */}
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+              <FaEnvelope className="mr-2 text-green-600 text-sm" />
+              Email Address *
+            </label>
+            <input
+              type="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
               disabled={loading}
-              style={{
-                ...styles.submitButton,
-                ...(loading ? styles.submitButtonDisabled : {})
-              }}
-              onMouseOver={(e) => !loading && (e.target.style.backgroundColor = THEME_COLORS.darkText)}
-              onMouseOut={(e) => !loading && (e.target.style.backgroundColor = THEME_COLORS.primaryGreen)}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
+              placeholder="Enter your email"
+            />
+          </div>
+
+          {/* City Input */}
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+              <FaEnvelope className="mr-2 text-green-600 text-sm" />
+              City *
+            </label>
+            <input
+              type="text"
+              name="city"
+              value={formData.city}
+              onChange={handleChange}
+              required
+              disabled={loading}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
+              placeholder="Enter your city"
+            />
+          </div>
+
+          {/* Username Input */}
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+              <FaUser className="mr-2 text-green-600 text-sm" />
+              Username *
+            </label>
+            <input
+              type="text"
+              name="username"
+              value={formData.username}
+              onChange={handleChange}
+              required
+              disabled={loading}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
+              placeholder="Choose a username"
+            />
+          </div>
+
+          {/* Password Input */}
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+              <FaLock className="mr-2 text-green-600 text-sm" />
+              Password *
+            </label>
+            <input
+              type="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              disabled={loading}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
+              placeholder="Create a password"
+            />
+          </div>
+
+          {/* Confirm Password Input */}
+          <div>
+            <label className="flex items-center text-sm font-semibold text-gray-700 mb-2">
+              <FaLock className="mr-2 text-green-600 text-sm" />
+              Confirm Password *
+            </label>
+            <input
+              type="password"
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              disabled={loading}
+              className="w-full p-3 border-2 border-gray-300 rounded-xl text-base focus:border-green-500 focus:ring-green-500 transition duration-300"
+              placeholder="Confirm your password"
+            />
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full p-4 rounded-xl text-white font-bold text-lg transition duration-300 shadow-md ${
+              loading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-green-600 hover:bg-green-700 transform hover:-translate-y-0.5'
+            } flex items-center justify-center`}
+          >
+            {loading ? (
+              <>
+                <FaSpinner className="animate-spin mr-2" />
+                Registering...
+              </>
+            ) : (
+              'Create Sustainable Account'
+            )}
+          </button>
+
+          {/* Switch to Login */}
+          <div className="text-center pt-2">
+            <span className="text-gray-600">Already part of the community? </span>
+            <button
+              type="button"
+              onClick={onSwitchToLogin}
+              disabled={loading}
+              className="bg-transparent border-none text-blue-600 font-medium hover:text-blue-800 underline transition duration-150 cursor-pointer"
             >
-              {loading ? (
-                <>
-                  <FaSpinner style={{ animation: 'spin 1s linear infinite' }} />
-                  Creating Account...
-                </>
-              ) : (
-                'Create Sustainable Account'
-              )}
+              Sign in here
             </button>
-
-            {/* Switch to Login */}
-            <div style={styles.switchContainer}>
-              <div style={styles.switchText}>Already part of the community?</div>
-              <button
-                type="button"
-                onClick={onSwitchToLogin}
-                disabled={loading}
-                style={styles.switchButton}
-                onMouseOver={(e) => e.target.style.color = THEME_COLORS.darkText}
-                onMouseOut={(e) => e.target.style.color = THEME_COLORS.primaryGreen}
-              >
-                Sign in to your account
-              </button>
-            </div>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
-
-      {/* Add CSS animation for spinner */}
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
     </div>
   );
 }

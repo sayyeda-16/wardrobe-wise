@@ -8,7 +8,6 @@ import ItemFilters from '../components/ItemFilters';
 import ItemDetails from '../components/ItemDetails';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
-import ResellModal from '../components/ResellModal';
 
 // --- Theme & Data Constants ---
 
@@ -178,7 +177,6 @@ const fetchWeather = async (city) => {
           seller_type: item.purchase_info?.seller_type,
           price_cents: item.purchase_info?.price_cents,
           purchase_date: item.purchase_info?.purchase_date,
-          brand: item.brand || item.brand_name || 'Unknown Brand',
           // Note: brand and category are expected to be strings here, 
           // which the backend SlugRelatedField fix should provide.
       }));
@@ -266,7 +264,7 @@ const fetchWeather = async (city) => {
       brand: '',
       color: '',
       condition: '',
-      lifecycle: '',
+      lifecycle: 'Active',
     });
   };
 
@@ -280,52 +278,25 @@ const fetchWeather = async (city) => {
     setSelectedItem(null);
   };
 
-    const handlePromptResell = (item) => {
-      // 1. Close the ItemDetails modal if it's open
-      handleCloseDetails(); 
-      // 2. Set the item and open the new Resell form
-      setSelectedItem(item);
-      setShowResellForm(true); // 👈 OPEN THE NEW MODAL
-  };
-
-  const handleCloseResellForm = () => {
-    setShowResellForm(false);
-    setSelectedItem(null);
-};
-
-  const handleSellItem = async (item, listPrice, descriptionText) => { // 👈 ADD NEW ARGUMENTS
-      // The price validation and conversion is now handled by the form component
-      const list_price_cents = Math.round(parseFloat(listPrice) * 100); 
+  const handleSellItem = async (item) => {
+      const price = prompt(`Set price (USD) for ${item.item_name || item.name}:`);
+      if (!price || isNaN(price) || parseFloat(price) <= 0) return;
 
       try {
-          // Your backend /api/items/ endpoint handles creating the Item AND the Listing
-          // We need to use the dedicated Listing endpoint if Item creation is not needed.
-          // Since you successfully created the item via the Item endpoint in the previous step,
-          // we'll assume the separate Listing endpoint /api/listings/ is now used to *update* the item lifecycle.
-          
-          await api.post('/api/listings/', {
-              item_id: item.item_id,
-              list_price_cents: list_price_cents,
-              // 👈 Pass Title/Description to the Listing model fields
-              title: item.item_name, // Use item name as default title
-              description: descriptionText || `Listing for pre-loved ${item.item_name}.`,
-          });
-          
-          // 1. Alert user and refresh list
-          alert(`Item "${item.item_name}" successfully listed for $${listPrice}!`);
-          fetchItems(); 
-          
-          // 2. Close the resell form
-          setShowResellForm(false); // 👈 CLOSE THE RESELL FORM
-          setSelectedItem(null);
-
+        // ✅ Using the live API endpoint for listing creation
+        await api.post('/api/listings/', {
+          item_id: item.item_id,
+          list_price_cents: Math.round(parseFloat(price) * 100) // Note: Used list_price_cents assuming that's the field name on the Listing model
+        });
+        alert('Item successfully listed for sustainable resale! Your wardrobe view will now refresh.');
+        fetchItems(); // Refresh the list to update the lifecycle status to 'Listed'
+        handleCloseDetails();
       } catch (error) {
-          console.error('Error listing item:', error.response?.data || error.message);
-          alert('Failed to list item. Please check the console for details.');
-          setShowResellForm(false);
-          setSelectedItem(null);
+        console.error('Error listing item:', error.response?.data || error.message);
+        alert('Failed to list item. Please check the console for details.');
+        handleCloseDetails();
       }
-  };
+    };
 
   const fetchSuggestions = useCallback(async () => {
     setLoadingSuggestions(true);
@@ -482,10 +453,7 @@ const fetchWeather = async (city) => {
           <div style={styles.itemsGrid}>
             {filteredItems.map(item => (
               <div key={item.item_id || item.id} onClick={() => handleViewDetails(item)} style={styles.itemWrapper}>
-                <ItemCard item={item}
-                onSell={handlePromptResell} // 👈 PASS THE RESELL HANDLER
-                onDelete={handleDeleteItem}
-                />
+                <ItemCard item={item} />
               </div>
             ))}
           </div>
@@ -499,14 +467,8 @@ const fetchWeather = async (city) => {
         onClose={handleCloseDetails}
         onEdit={handleEditItem}
         onDelete={handleDeleteItem}
-        onSell={handlePromptResell}
+        onSell={handleSellItem}
       />
-      <ResellModal
-        item={selectedItem}
-        isOpen={showResellForm} // Controls visibility using the state
-        onClose={handleCloseResellForm} // New handler to close the modal
-        onList={handleSellItem} // The function that performs the API POST
-      />
     </div>
   );
 }
@@ -514,6 +476,7 @@ const fetchWeather = async (city) => {
 // --- Component Styling (Enhanced Readability & Contrast for Hero Bar) ---
 
 const styles = {
+  // --- General Styles (Using THEME_COLORS for consistency) ---
   container: {
     minHeight: '100vh',
     background: `linear-gradient(135deg, ${THEME_COLORS.offWhite} 0%, ${THEME_COLORS.lightGreen} 100%)`,
@@ -546,6 +509,7 @@ const styles = {
     color: 'white',
     boxShadow: '0 10px 40px rgba(34, 51, 17, 0.4)', 
     overflow: 'hidden',
+    borderRadius: '12px', 
   },
   headerBackground: {
     position: 'absolute',
@@ -605,6 +569,7 @@ const styles = {
     backgroundColor: THEME_COLORS.lightGreen, 
     color: THEME_COLORS.darkText, 
     border: 'none',
+    borderRadius: '4px',
     fontSize: '15px',
     fontWeight: '700', 
     cursor: 'pointer',

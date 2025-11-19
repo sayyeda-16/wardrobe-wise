@@ -311,6 +311,7 @@ const styles = {
     transition: 'all 0.3s ease',
     backdropFilter: 'blur(10px)',
     fontFamily: 'inherit',
+    borderRadius: '4px', // Added for better button appearance
   },
   logoutIcon: {
     fontSize: '14px',
@@ -329,6 +330,7 @@ const styles = {
     fontWeight: '600',
     transition: 'all 0.3s ease',
     border: '1px solid transparent',
+    borderRadius: '4px', // Added for better link appearance
   },
   registerButton: {
     display: 'flex',
@@ -343,6 +345,7 @@ const styles = {
     transition: 'all 0.3s ease',
     boxShadow: '0 4px 15px rgba(162, 186, 113, 0.3)',
     border: '2px solid transparent',
+    borderRadius: '4px', // Added for better link appearance
   },
   registerIcon: {
     fontSize: '14px',
@@ -360,6 +363,7 @@ const styles = {
     textDecoration: 'none',
     transition: 'all 0.3s ease',
     opacity: 0.8,
+    borderRadius: '50%', // Assuming these are circular icon links
   },
 };
 
