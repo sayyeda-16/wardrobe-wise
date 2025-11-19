@@ -485,6 +485,7 @@ const fetchWeather = async (city) => {
                 <ItemCard item={item}
                 onSell={handlePromptResell} // 👈 PASS THE RESELL HANDLER
                 onDelete={handleDeleteItem}
+                onEdit={handleEditItem}
                 />
               </div>
             ))}

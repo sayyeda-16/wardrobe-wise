@@ -1,7 +1,7 @@
 // src/components/ItemCard.js (UPDATED CODE)
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FaTag, FaLeaf, FaRecycle, FaSeedling, FaTshirt, FaShoePrints, FaGem, FaShoppingCart, FaTrash } from 'react-icons/fa';
+import { FaTag, FaLeaf, FaRecycle, FaSeedling, FaTshirt, FaShoePrints, FaGem, FaShoppingCart, FaTrash, FaEdit } from 'react-icons/fa';
 
 // --- Utility Functions (Kept in JS as they generate dynamic styles) ---
 
@@ -42,7 +42,7 @@ const formatPrice = (cents) => `$${(cents / 100).toFixed(2)}`;
 
 // --- Main Component ---
 
-function ItemCard({ item, onSell, onDelete, isMarketplace = false }) { 
+function ItemCard({ item, onClick, onEdit, onSell, onDelete, isMarketplace = false }) { 
   
   const cardColor = getCardColor(item.item_id || item.id);
   const isListed = item.lifecycle === 'Listed';
@@ -90,7 +90,7 @@ function ItemCard({ item, onSell, onDelete, isMarketplace = false }) {
       {/* Brand and Category */}
       <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-300 border-opacity-50">
         <span className="text-sm font-semibold text-gray-700" style={{ color: cardColor.accent }}>
-          {item.brand_name || item.brand || item.seller || 'Unknown Brand'}
+          {item.brand_name || item.brand || item.seller_user?.name || 'Unknown Brand'}
         </span>
         <div className="flex items-center gap-1.5 text-xs text-gray-600 font-medium">
           {getCategoryIcon(item.category_name || item.category)}
@@ -138,6 +138,26 @@ function ItemCard({ item, onSell, onDelete, isMarketplace = false }) {
         ) : (
           // Wardrobe Actions: Resell and Remove buttons
           <>
+          {/* 1. EDIT BUTTON (Small Icon-Only, w-1/4) */}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEdit(item);
+                        }}
+                        disabled={isListed}
+                        // Uses w-1/4 to enforce a small, icon-only button on the left
+                        className={`w-1/4 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition duration-200 shadow-md ${
+                          isListed
+                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                            : 'text-white hover:opacity-90 hover:-translate-y-0.5'
+                        }`}
+                        style={{
+                          backgroundColor: isListed ? undefined : cardColor.accent,
+                        }}
+                      >
+                        <FaEdit className="text-xs" />
+                      </button>
+                     
             <button 
               onClick={(e) => {
                 e.stopPropagation();
@@ -163,7 +183,7 @@ function ItemCard({ item, onSell, onDelete, isMarketplace = false }) {
                 onDelete(item);
               }}
               disabled={isListed}
-              className={` gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition duration-200 shadow-md ${
+              className={`w-1/4 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold transition duration-200 shadow-md ${
               isListed 
                 ? 'bg-gray-400 text-gray-700 cursor-not-allowed' 
                 : 'bg-red-600 text-white hover:opacity-90 hover:-translate-y-0.5'

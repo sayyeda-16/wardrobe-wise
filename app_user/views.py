@@ -8,7 +8,7 @@ from .models import User, Purchase, AppUser, Brand
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, BasePermission 
 from rest_framework.permissions import AllowAny
 from rest_framework.permissions import IsAdminUser
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -24,6 +24,9 @@ from django.shortcuts import get_object_or_404
 from django.db.models.functions import Coalesce, Cast
 from django.db import connection
 from datetime import date 
+from .models import  PurchaseIntent 
+from .serializers import SellerContactSerializer 
+
 
 User = get_user_model()
 
@@ -354,26 +357,26 @@ class InventoryReport(APIView):
         return Response(results)
 
 
-class UsageFrequency(APIView):
-    permission_classes = [IsAdminUser]
+# class UsageFrequency(APIView):
+#     permission_classes = [IsAdminUser]
 
 
-    def get(self, request):
-        # Hypothetical "WearLog" table — replace if you have different model
-        data = (
-            WearLog.objects
-            .values('item__category')
-            .annotate(total=Count('id'))
-        )
+#     def get(self, request):
+#         # Hypothetical "WearLog" table — replace if you have different model
+#         data = (
+#             WearLog.objects
+#             .values('item__category')
+#             .annotate(total=Count('id'))
+#         )
 
 
-        results = [
-            {"label": row['item__category'], "value": row['total']}
-            for row in data
-        ]
+#         results = [
+#             {"label": row['item__category'], "value": row['total']}
+#             for row in data
+#         ]
 
 
-        return Response(results)
+#         return Response(results)
 
 
 class ItemListCreate(generics.ListCreateAPIView):
@@ -394,15 +397,15 @@ class ItemListCreate(generics.ListCreateAPIView):
         serializer.save(user=AppUser.objects.get(user=self.request.user))
 
 
-class ItemRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = ItemSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'item_id'
+# class ItemRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+#     serializer_class = ItemSerializer
+#     permission_classes = [IsAuthenticated]
+#     lookup_field = 'item_id'
    
-    def get_queryset(self):
-        user_profile = AppUser.objects.get(user=self.request.user)
-        # Ensure user can only retrieve/update/delete their own items
-        return Item.objects.filter(user=user_profile)
+#     def get_queryset(self):
+#         user_profile = AppUser.objects.get(user=self.request.user)
+#         # Ensure user can only retrieve/update/delete their own items
+#         return Item.objects.filter(user=user_profile)
     
 
 class MarketplaceListingsView(generics.ListAPIView):
@@ -441,6 +444,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
         # Write permissions (PUT/PATCH/DELETE) are only allowed to the owner
         # Since Item model uses 'user' field, we check against that.
         return obj.user.user == request.user
+        
 
 class ItemListCreateView(generics.ListCreateAPIView):
     """
@@ -702,3 +706,48 @@ class ItemConditionSummaryView(APIView):
             
         # The serializer is not strictly necessary here, return raw data
         return Response(results)
+
+
+class ContactSellerView(APIView):
+    permission_classes = [IsAuthenticated]
+
+
+    def post(self, request):
+        listing_id = request.data.get('listing_id')
+
+
+        if not listing_id:
+            return Response({"error": "Listing ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+        try:
+            # Optimized query to get the listing, the AppUser, AND the base User
+            listing = Listing.objects.select_related(
+                "seller_user__user",  # Fetches AppUser and the linked User
+                "item"
+            ).get(listing_id=listing_id)
+           
+        except Listing.DoesNotExist:
+            return Response({"error": "Listing not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+        # Log intent
+        PurchaseIntent.objects.create(
+            # --- THIS IS THE FIX ---
+            # The 'buyer' field on PurchaseIntent links to the base User,
+            # not the AppUser profile.
+            buyer=request.user,
+            listing=listing,
+            status='INITIATED'
+        )
+
+
+        # Prepare data context for the serializer
+        data_context = {
+            "listing": listing,
+            "seller": listing.seller_user, # Pass the AppUser profile
+        }
+
+
+        serializer = SellerContactSerializer(data_context)
+        return Response(serializer.data, status=status.HTTP_200_OK)

@@ -1,5 +1,12 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+##checkout page changes
+from django.db import models
+from django.conf import settings
+
+
+##added for edit item
+from django.contrib.auth import get_user_model
 
 
 class User(AbstractUser):
@@ -192,3 +199,38 @@ class VEcoFriendlyUser(models.Model):
         managed = False  # Tells Django this table/view is not created/managed by migrations
         db_table = 'v_eco_friendly_users'
 
+
+class PurchaseIntent(models.Model):
+    """Logs when a buyer clicks 'Buy Now' to contact a seller."""
+   
+    # Buyer is the user who initiated contact
+    buyer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='purchase_intents'
+    )
+   
+    # Listing is the item they are interested in
+    listing = models.ForeignKey(
+        'Listing', # Assuming you have a Listing model
+        on_delete=models.CASCADE,
+        related_name='intents'
+    )
+   
+    # Timestamp for when the interest was logged
+    date_logged = models.DateTimeField(auto_now_add=True)
+   
+    # Status can be used for tracking (e.g., 'contacted', 'resolved', 'abandoned')
+    STATUS_CHOICES = [
+        ('INITIATED', 'Contact Initiated'),
+        ('FOLLOW_UP', 'Follow Up Required'),
+        ('CLOSED', 'Closed/Resolved'),
+    ]
+    status = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='INITIATED'
+    )
+
+    def __str__(self):
+        return f"Intent by {self.buyer.username} for {self.listing.title}"

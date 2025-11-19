@@ -4,6 +4,7 @@ from django.contrib.auth.password_validation import validate_password
 from rest_framework import serializers
 from .models import AppUser, Item, Purchase, Listing, Sale
 from .models import Brand, Category, VEcoFriendlyUser
+from rest_framework import serializers
 
 
 User = get_user_model()
@@ -160,6 +161,36 @@ class ItemSerializer(serializers.ModelSerializer):
             })
         return data
 
+    def update(self, instance, validated_data):
+        # 1. Pop non-model fields that aren't used for Item details (editing should not re-list or re-buy)
+        validated_data.pop('list_for_sale', None)
+        validated_data.pop('list_price_cents', None)
+       
+        # 2. Prevent accidental changes to the item's owner or lifecycle status during an edit
+        validated_data.pop('user', None)
+        validated_data.pop('purchase', None)
+        validated_data.pop('purchase_info', None) # The purchase info should be updated in a separate view/flow
+       
+        # We allow lifecycle to be included in the validated_data but remove it here
+        # to ensure it's not changed during a PATCH request on item details.
+        validated_data.pop('lifecycle', None)
+       
+        # 3. Handle Brand update logic
+        brand_name = validated_data.pop('brand_name_input', None)
+        if brand_name:
+            brand_obj, created = Brand.objects.get_or_create(
+                name__iexact=brand_name,
+                defaults={'name': brand_name}
+            )
+            instance.brand = brand_obj # Set the new brand object on the Item instance
+           
+        # 4. Apply all remaining validated data to the Item instance and save
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+           
+        instance.save()
+        return instance
+
 
     def create(self, validated_data):
         # --- 1. POP and Parse Custom Data ---
@@ -188,21 +219,6 @@ class ItemSerializer(serializers.ModelSerializer):
         try:
             user_instance = authenticated_user 
             
-            # IF AppUser is a separate model with a one-to-one to the Auth User:
-            # If your Auth User model is the Django default User, and AppUser is a Profile:
-            # user_instance = AppUser.objects.get(user=authenticated_user) 
-            
-            # Based on your SQL schema, AppUser is likely the model you are using for the Item FK.
-            # Since you are likely using AppUser as your custom model or a profile, let's use the simplest retrieval
-            # that assumes the authenticated user object is the one you need.
-            # IF your Auth model is AppUser, the authenticated_user is already correct.
-            
-            # Let's assume your AppUser model is named 'AppUser' in your models.py
-            # and that the authenticated_user object is NOT the AppUser model instance.
-            # The most common scenario is the Item FK points to the AUTH_USER_MODEL.
-            # Since the error says it requires "AppUser", the authenticated user is the WRONG model.
-            
-            # You need to look up the AppUser instance using the authenticated user's ID
             user_instance = AppUser.objects.get(email=authenticated_user.email) 
             
         except AppUser.DoesNotExist:
@@ -249,6 +265,8 @@ class ItemSerializer(serializers.ModelSerializer):
         return item
 
 class MarketplaceListingSerializer(serializers.ModelSerializer):
+    seller_name = serializers.CharField(source='seller_user.full_name', read_only=True)
+    seller_email = serializers.EmailField(source='seller_user.email', read_only=True)
     # Field to represent the name of the category
     category_name = serializers.CharField(source='item.category.name', read_only=True)
    
@@ -280,6 +298,8 @@ class MarketplaceListingSerializer(serializers.ModelSerializer):
             'color',
             'condition',
             'size_label',
+            'seller_name',
+            'seller_email',
             # Add image_url if you expose it through the Listing model or a related Item field
         ]
 
@@ -288,3 +308,78 @@ class EcoFriendlyUserSerializer(serializers.ModelSerializer):
         model = VEcoFriendlyUser
         # Expose all fields from the view
         fields = ['user_id', 'full_name', 'eco_buys', 'donations']
+
+# edit item classes
+class BrandSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Brand
+        fields = ['id', 'name']
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'name']
+
+
+# seller stuff
+class SellerContactSerializer(serializers.Serializer):
+    """
+    Serializer used to fetch and format the necessary data
+    for the Contact Seller summary page.
+    """
+    # === Item Details ===
+    listing_id = serializers.CharField(source='listing.listing_id')
+    title = serializers.CharField(source='listing.title')
+    list_price_cents = serializers.IntegerField(source='listing.list_price_cents')
+   
+    # Assumes image_url is on the Item model
+    image_url = serializers.URLField(source='listing.item.image_url', allow_null=True, required=False)
+   
+    # === Seller Details ===
+    # Access the base User model (which has name/email) via AppUser ('seller')
+    seller_name = serializers.CharField(source='seller.user.username')
+    seller_email = serializers.EmailField(source='seller.user.email')
+   
+    # === Fee Constants ===
+    shipping_fee_cents = serializers.SerializerMethodField()
+    service_fee_cents = serializers.SerializerMethodField()
+   
+    # === Calculated Total ===
+    order_total_cents = serializers.SerializerMethodField()
+
+
+    def get_shipping_fee_cents(self, obj):
+        return 500 # $5.00
+
+
+    def get_service_fee_cents(self, obj):
+        return 150 # $1.50
+
+
+    def get_order_total_cents(self, obj):
+        list_price = obj['listing'].list_price_cents
+        return list_price + self.get_shipping_fee_cents(obj) + self.get_service_fee_cents(obj)
+
+
+# ===================================================================
+# == 2. NEW SELLERINFOSERIALIZER (FOR MARKETPLACE LIST) ==
+#    (This is the new serializer to fix the "Seller Not Found" error)
+# ===================================================================
+
+
+class SellerInfoSerializer(serializers.ModelSerializer):
+    """
+    Serializes the seller's public-facing info (name and email)
+    from the base User model, accessed via the AppUser profile.
+    """
+    name = serializers.CharField(source='user.username', read_only=True)
+    email = serializers.EmailField(source='user.email', read_only=True)
+
+
+    class Meta:
+        model = AppUser  # Based on your AppUser model
+        fields = ['name', 'email']
+
+
+

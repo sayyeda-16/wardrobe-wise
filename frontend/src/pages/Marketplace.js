@@ -185,7 +185,7 @@ function Marketplace() {
                                 filteredAndSortedListings.map(item => (
                                     // ItemCard is expected to be a real component
                                     <ItemCard 
-                                        key={item.id} 
+                                        key={item.listing_id} 
                                         item={item} 
                                         isMarketplace={true} // Explicitly tell the card it's for the marketplace
                                     /> 

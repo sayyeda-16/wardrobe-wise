@@ -22,12 +22,14 @@ from app_user.views import CustomTokenObtainPairView
 from app_user.views import LogoutView
 from app_user.views import UserProfileView
 from app_user.views import UserProfileStats, UserOrders, UserListingsView
-from app_user.views import TopSellingCategories, SalesHistory, TargetUserCohorts, InventoryReport, UsageFrequency
+from app_user.views import TopSellingCategories, SalesHistory, TargetUserCohorts, InventoryReport
 from app_user.views import CurrentUser
 from app_user.views import MeView
 from app_user.views import ItemListCreateView, ItemRetrieveUpdateDestroyView, SeasonalWardrobeSuggestionsView, ItemConditionSummaryView
 from app_user.views import MarketplaceListingsView, PurchaseSourceSummaryView, BrandPurchaseSummaryView, EcoFriendlyUserAnalyticsViewSet
 from rest_framework.routers import DefaultRouter
+from app_user.views import ContactSellerView 
+
 
 router = DefaultRouter()
 router.register(
@@ -63,7 +65,7 @@ urlpatterns = [
     path('api/marketplace/sales-history/', SalesHistory.as_view(), name='sales-history'),
     path('api/reports/user-cohorts/', TargetUserCohorts.as_view(), name='user-cohorts'),
     path('api/reports/inventory/', InventoryReport.as_view(), name='inventory-report'),
-    path('api/usage/frequency/', UsageFrequency.as_view(), name='usage-frequency'),
+    #path('api/usage/frequency/', UsageFrequency.as_view(), name='usage-frequency'),
 
     # items fetch and add
     path('api/items/', ItemListCreateView.as_view(), name='item-list-create'), 
@@ -81,4 +83,9 @@ urlpatterns = [
     path('api/listings/all/', MarketplaceListingsView.as_view(), name='marketplace-list'),
     #path('api/marketplace/all/', MarketplaceListingsView.as_view(), name='marketplace-list'),
 
+
+    # marketplace checkout
+    path('api/marketplace/checkout/', ContactSellerView.as_view(), name='checkout_intent'),
+     # # 3. Item Edit/Delete
+    #path('api/items/<int:item_id>/', ItemRetrieveUpdateDestroyView.as_view(), name='item-detail'),
 ] + router.urls

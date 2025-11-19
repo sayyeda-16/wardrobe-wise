@@ -16,6 +16,7 @@ import ItemDetail from './pages/ItemDetail';
 
 import AnalyticsPage from './pages/AnalyticsPage'; 
 // ... other imports
+import EditItem from './pages/EditItem';
 
 
 
@@ -150,7 +151,10 @@ function AppContent() {
 							onCancel={navToWardrobe}
 						/>
 					} />
-								
+					<Route
+						path="/edit-item/:item_id"
+						element={<EditItem />}
+					/>
 					{/* Item Detail Route (Dynamic URL) */}
 					<Route path="/item/:itemId" element={<ItemDetail />} /> 
 
