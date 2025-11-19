@@ -38,7 +38,10 @@ function UserProfile() {
 
     const [brandSummary, setBrandSummary] = useState([]);
     const [brandSummaryLoading, setBrandSummaryLoading] = useState(true);
-
+    
+    const [conditionBreakdown, setConditionBreakdown] = useState([]);
+    const [conditionBreakdownLoading, setConditionBreakdownLoading] = useState(true);
+    
     // 🟢 FETCHING LOGIC
     const fetchPurchaseSummary = useCallback(async () => {
         setSummaryLoading(true);
@@ -63,6 +66,19 @@ function UserProfile() {
             setBrandSummary([]);
         } finally {
         setBrandSummaryLoading(false);
+        }
+    }, []);
+
+    const fetchConditionBreakdown = useCallback(async () => {
+        setConditionBreakdownLoading(true);
+        try {
+            const response = await api.get('/api/wardrobe/condition-summary/');
+            setConditionBreakdown(response.data);
+        } catch (error) {
+            console.error('Error fetching condition breakdown:', error);
+            setConditionBreakdown([]);
+        } finally {
+            setConditionBreakdownLoading(false);
         }
     }, []);
 
@@ -103,8 +119,9 @@ function UserProfile() {
             fetchUserData();
             fetchPurchaseSummary();
             fetchBrandSummary(); 
+            fetchConditionBreakdown();
         }
-    }, [user, fetchPurchaseSummary, fetchBrandSummary]);
+    }, [user, fetchPurchaseSummary, fetchBrandSummary, fetchConditionBreakdown]);
 
 
     // Helper component for stat cards
@@ -303,6 +320,73 @@ function UserProfile() {
         );
     };
 
+    const ConditionBreakdownCard = () => {
+        const data = conditionBreakdown;
+        const loading = conditionBreakdownLoading;
+
+        const containerClasses = "p-5 border border-gray-200 rounded-lg shadow-md bg-white";
+        const titleClasses = "text-xl font-semibold text-blue-800 mb-4";
+
+        if (loading) {
+            return (
+                <div className={containerClasses}>
+                    <div className={titleClasses}>♻️ Wardrobe Condition Summary</div>
+                    <div className="italic text-slate-500 p-4">
+                        Loading item condition analysis...
+                    </div>
+                </div>
+            );
+        }
+
+        if (data.length === 0) {
+            return (
+                <div className={containerClasses}>
+                    <div className={titleClasses}>♻️ Wardrobe Condition Summary</div>
+                    <p className="text-gray-600">No active items found to summarize condition.</p>
+                </div>
+            );
+        }
+
+        const totalItems = data.reduce((sum, item) => sum + item.count, 0);
+
+        // Map conditions to percentages and assign Tailwind color classes
+        const conditionMap = {
+            'New': { color: 'bg-green-100 text-green-800', badge: 'bg-green-500' },
+            'LikeNew': { color: 'bg-blue-100 text-blue-800', badge: 'bg-blue-500' },
+            'Good': { color: 'bg-yellow-100 text-yellow-800', badge: 'bg-yellow-500' },
+            'Fair': { color: 'bg-orange-100 text-orange-800', badge: 'bg-orange-500' },
+            'Worn': { color: 'bg-red-100 text-red-800', badge: 'bg-red-500' },
+        };
+
+        return (
+            <div className={containerClasses}>
+                <div className={titleClasses}>♻️ Wardrobe Condition Summary</div>
+                <div className="space-y-3">
+                    {data.map((item, index) => {
+                        const percentage = ((item.count / totalItems) * 100).toFixed(1);
+                        const style = conditionMap[item.condition] || { color: 'bg-gray-100 text-gray-800', badge: 'bg-gray-500' };
+
+                        return (
+                            <div key={index} className={`flex justify-between items-center p-3 rounded-lg ${style.color}`}>
+                                <div className="flex items-center gap-3">
+                                    <span className={`w-3 h-3 rounded-full ${style.badge}`}></span>
+                                    <span className="font-semibold">{item.condition.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="font-bold text-xl">{percentage}%</span>
+                                    <span className="text-sm ml-2">({item.count} items)</span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                    <div className="pt-3 border-t border-gray-300 text-right font-semibold text-gray-700">
+                        Total Items: {totalItems}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const DashboardTab = () => (
         <div className="space-y-6">
             <h2 className="text-2xl font-semibold text-gray-800 border-b pb-2 mb-4 flex items-center gap-2"><FaChartLine /> Sustainability Impact</h2>
@@ -336,6 +420,7 @@ function UserProfile() {
                     <ListingsList tabTitle="Active Listings" list={listings.filter(l => l.status === 'Listed').slice(0, 3)} />
                 </div>
                 <BrandSummaryCard />
+                <ConditionBreakdownCard />
             </div>
         </div>
     );

@@ -22,6 +22,7 @@ from django.utils import timezone
 from django.db.models.functions import TruncDay
 from django.shortcuts import get_object_or_404
 from django.db.models.functions import Coalesce, Cast
+from django.db import connection
 from datetime import date 
 
 User = get_user_model()
@@ -661,3 +662,43 @@ class SeasonalWardrobeSuggestionsView(generics.ListAPIView):
         )[:15] 
 
         return list(queryset)
+
+class ItemConditionSummaryView(APIView):
+    """
+    Returns a breakdown of active items by condition for the authenticated user,
+    using the v_item_condition_breakdown database view.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, format=None):
+        user_id = request.user.id  # Assuming the PK is 'id' on the authenticated user model
+        
+        # 🎯 Adjust the SQL query to select columns and filter by user_id
+        sql_query = """
+            SELECT condition, cnt 
+            FROM v_item_condition_breakdown
+            WHERE user_id = %s
+            ORDER BY cnt DESC;
+        """
+        
+        results = []
+        try:
+            with connection.cursor() as cursor:
+                # Execute the raw query, passing the user_id as a parameter
+                cursor.execute(sql_query, [user_id])
+                
+                # Fetch results and manually map columns
+                rows = cursor.fetchall()
+                for row in rows:
+                    results.append({
+                        'condition': row[0], # condition
+                        'count': row[1]      # cnt
+                    })
+
+        except Exception as e:
+            # Handle potential database or view errors
+            print(f"Database error fetching condition summary: {e}")
+            return Response({'error': 'Could not fetch condition summary.'}, status=500)
+            
+        # The serializer is not strictly necessary here, return raw data
+        return Response(results)

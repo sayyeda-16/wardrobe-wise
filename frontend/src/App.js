@@ -149,7 +149,11 @@ function AppContent() {
 							onCancel={navToWardrobe}
 						/>
 					} />
-					
+					<Route 
+						path="/edit-item/:item_id" 
+						element={<EditItem />} 
+					/>
+								
 					{/* Item Detail Route (Dynamic URL) */}
 					<Route path="/item/:itemId" element={<ItemDetail />} /> 
 
