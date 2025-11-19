@@ -27,6 +27,7 @@ import OrderConfirmation from './pages/OrderConfirmation';
 import UserProfile from './pages/UserProfile'; 	 	 
 import Settings from './pages/Settings'; 	 	 	 	 
 import WardrobeStats from './components/WardrobeStats'; 
+//import EditItem from '../pages/EditItem';
 
 // protected Route Component
 function AdminRoute({ children }) {
@@ -149,10 +150,6 @@ function AppContent() {
 							onCancel={navToWardrobe}
 						/>
 					} />
-					<Route 
-						path="/edit-item/:item_id" 
-						element={<EditItem />} 
-					/>
 								
 					{/* Item Detail Route (Dynamic URL) */}
 					<Route path="/item/:itemId" element={<ItemDetail />} /> 
